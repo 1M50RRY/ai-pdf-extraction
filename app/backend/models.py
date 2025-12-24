@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 class FieldType(str, Enum):
     """Supported field types for extraction."""
 
-    STRING = "string"
+    STRING = "string"  # Also serves as catch-all for mixed text/data
     CURRENCY = "currency"
     DATE = "date"
     NUMBER = "number"
@@ -79,6 +79,7 @@ class SchemaDefinition(BaseModel):
         description: Description of what document type this schema handles.
         fields: List of field definitions to extract.
         version: Schema version for tracking changes.
+        validation_rules: Optional list of mathematical validation rules.
     """
 
     name: str = Field(
@@ -102,6 +103,19 @@ class SchemaDefinition(BaseModel):
         default="1.0",
         description="Schema version",
     )
+    validation_rules: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Mathematical validation rules using field names. "
+            "Format: 'field_a == field_b + field_c' or 'field_x == field_y - field_z'. "
+            "Used to verify numerical relationships in extracted data."
+        ),
+        examples=[
+            "total_amount == subtotal + tax",
+            "net_pay == gross_pay - deductions",
+            "balance == credits - debits",
+        ],
+    )
 
     @field_validator("fields")
     @classmethod
@@ -113,6 +127,32 @@ class SchemaDefinition(BaseModel):
         if len(names) != len(set(names)):
             raise ValueError("All field names must be unique within a schema")
         return v
+
+    @field_validator("validation_rules")
+    @classmethod
+    def validate_rule_format(cls, v: list[str]) -> list[str]:
+        """
+        Validate that rules follow a valid expression format.
+
+        Allows complex expressions like:
+        - "total == subtotal + tax"
+        - "grand_total == (subtotal + shipping) * (1 + tax_rate)"
+        - "margin == (revenue - cost) / revenue"
+        """
+        import re
+
+        # More flexible pattern: must have == and valid expression chars
+        # Allows: identifiers, operators (+, -, *, /, ==), parentheses, numbers, spaces
+        valid_chars_pattern = re.compile(
+            r"^[a-z_][a-z0-9_]*\s*==\s*[\w\s+\-*/().]+$",
+            re.IGNORECASE,
+        )
+        validated = []
+        for rule in v:
+            rule = rule.strip()
+            if rule and "==" in rule and valid_chars_pattern.match(rule):
+                validated.append(rule)
+        return validated
 
 
 class ExtractionResult(BaseModel):
