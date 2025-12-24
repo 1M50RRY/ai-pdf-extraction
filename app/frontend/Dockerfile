@@ -15,20 +15,17 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Production stage - serve with lightweight server
-FROM node:18-alpine AS production
+# Production stage - serve with nginx (includes API reverse proxy)
+FROM nginx:alpine AS production
 
-WORKDIR /app
-
-# Install serve for static file serving
-RUN npm install -g serve
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built assets from builder
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port
 EXPOSE 3000
 
-# Serve the built application
-CMD ["serve", "-s", "dist", "-l", "3000"]
-
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
