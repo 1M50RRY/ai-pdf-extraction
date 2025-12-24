@@ -7,7 +7,11 @@ import {
   X,
   ChevronDown,
   AlertCircle,
+  Save,
+  Bookmark,
+  Loader2,
 } from "lucide-react";
+import { saveSchema } from "../api";
 import type { FieldDefinition, FieldType, SchemaDefinition } from "../types";
 
 const FIELD_TYPES: FieldType[] = [
@@ -34,11 +38,141 @@ const TYPE_COLORS: Record<FieldType, string> = {
   percentage: "bg-rose-500/20 text-rose-300 border-rose-500/30",
 };
 
+interface SaveTemplateModalProps {
+  schema: SchemaDefinition;
+  onClose: () => void;
+  onSaved: (schemaId: string) => void;
+}
+
+function SaveTemplateModal({ schema, onClose, onSaved }: SaveTemplateModalProps) {
+  const [name, setName] = useState(schema.name || "");
+  const [description, setDescription] = useState(schema.description || "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      setError("Template name is required");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const schemaToSave = {
+        ...schema,
+        name: name.trim(),
+        description: description.trim(),
+      };
+      const saved = await saveSchema(schemaToSave);
+      onSaved(saved.id);
+      onClose();
+    } catch (err) {
+      console.error("Failed to save template:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to save template"
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 w-full max-w-md p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+            <Bookmark className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-100">
+              Save as Template
+            </h3>
+            <p className="text-sm text-slate-400">
+              Reuse this schema for future extractions
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Template Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Vendor X Invoice"
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Optional description..."
+              rows={3}
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none"
+            />
+          </div>
+
+          <div className="bg-slate-700/50 rounded-lg p-3">
+            <p className="text-sm text-slate-400">
+              <strong className="text-slate-300">{schema.fields.length}</strong> fields
+              {schema.validation_rules.length > 0 && (
+                <> • <strong className="text-slate-300">{schema.validation_rules.length}</strong> validation rules</>
+              )}
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving || !name.trim()}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg font-medium transition-colors"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            Save Template
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface SchemaEditorProps {
   schema: SchemaDefinition;
   onSchemaChange: (schema: SchemaDefinition) => void;
   onConfirm: () => void;
   isLoading?: boolean;
+  onSchemaSaved?: (schemaId: string) => void;
 }
 
 export function SchemaEditor({
@@ -46,9 +180,12 @@ export function SchemaEditor({
   onSchemaChange,
   onConfirm,
   isLoading = false,
+  onSchemaSaved,
 }: SchemaEditorProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editField, setEditField] = useState<FieldDefinition | null>(null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [savedTemplateId, setSavedTemplateId] = useState<string | null>(null);
 
   const startEditing = (index: number) => {
     setEditingIndex(index);
@@ -94,6 +231,11 @@ export function SchemaEditor({
     onSchemaChange({ ...schema, fields: newFields });
   };
 
+  const handleSchemaSaved = (schemaId: string) => {
+    setSavedTemplateId(schemaId);
+    onSchemaSaved?.(schemaId);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -105,13 +247,36 @@ export function SchemaEditor({
             {schema.validation_rules.length} validation rules
           </p>
         </div>
-        <button
-          onClick={addField}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Add Field
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSaveModal(true)}
+            disabled={savedTemplateId !== null}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              savedTemplateId
+                ? "bg-emerald-500/20 text-emerald-400 cursor-default"
+                : "bg-slate-700 hover:bg-slate-600 text-slate-200"
+            }`}
+          >
+            {savedTemplateId ? (
+              <>
+                <Check className="w-4 h-4" />
+                Template Saved
+              </>
+            ) : (
+              <>
+                <Bookmark className="w-4 h-4" />
+                Save as Template
+              </>
+            )}
+          </button>
+          <button
+            onClick={addField}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Add Field
+          </button>
+        </div>
       </div>
 
       {/* Validation Rules */}
@@ -304,7 +469,15 @@ export function SchemaEditor({
           Confirm Schema & Start Batch
         </button>
       </div>
+
+      {/* Save Template Modal */}
+      {showSaveModal && (
+        <SaveTemplateModal
+          schema={schema}
+          onClose={() => setShowSaveModal(false)}
+          onSaved={handleSchemaSaved}
+        />
+      )}
     </div>
   );
 }
-

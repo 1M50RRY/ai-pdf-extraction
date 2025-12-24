@@ -12,17 +12,20 @@ import {
   UploadZone,
   MultiUploadZone,
   SchemaEditor,
-  BatchProgress,
-  ResultsTable,
+  LiveProgress,
+  EditableResultsTable,
   ValidationModal,
+  type EditableExtractionResult,
 } from "./components";
-import { uploadSample, extractBatch, healthCheck } from "./api";
+import {
+  uploadSample,
+  healthCheck,
+  startBatchExtraction,
+  type BatchStatusResponse,
+} from "./api";
 import type {
   AppStep,
   SchemaDefinition,
-  ExtractBatchResponse,
-  ExtractionResult,
-  BatchProgress as BatchProgressType,
 } from "./types";
 
 const STEPS: { id: AppStep; label: string; icon: React.ReactNode }[] = [
@@ -79,16 +82,14 @@ export default function App() {
 
   // Data state
   const [schema, setSchema] = useState<SchemaDefinition | null>(null);
+  const [schemaId, setSchemaId] = useState<string | null>(null);
   const [batchFiles, setBatchFiles] = useState<File[]>([]);
-  const [batchProgress, setBatchProgress] = useState<BatchProgressType>({
-    current: 0,
-    total: 0,
-    status: "idle",
-  });
-  const [results, setResults] = useState<ExtractBatchResponse[]>([]);
+  const [batchId, setBatchId] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [results, setResults] = useState<EditableExtractionResult[]>([]);
 
   // Validation modal state
-  const [selectedResult, setSelectedResult] = useState<ExtractionResult | null>(null);
+  const [selectedResult, setSelectedResult] = useState<EditableExtractionResult | null>(null);
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | undefined>(undefined);
 
   // Check backend health on mount
@@ -96,6 +97,7 @@ export default function App() {
     healthCheck().then(setIsBackendHealthy);
   }, []);
 
+  // Handle sample upload (for schema discovery)
   const handleSampleUpload = async (file: File) => {
     setIsLoading(true);
     setError(null);
@@ -103,6 +105,7 @@ export default function App() {
     try {
       const response = await uploadSample(file);
       setSchema(response.suggested_schema);
+      setSchemaId(null); // Clear any previously selected template
       setCurrentStep("schema");
     } catch (err) {
       console.error("Upload failed:", err);
@@ -116,61 +119,85 @@ export default function App() {
     }
   };
 
+  // Handle template selection (skip schema discovery)
+  const handleTemplateSelect = (selectedSchema: SchemaDefinition, selectedSchemaId: string) => {
+    setSchema(selectedSchema);
+    setSchemaId(selectedSchemaId);
+    setCurrentStep("batch"); // Skip schema editing, go straight to batch
+  };
+
+  // Handle schema confirmation
   const handleSchemaConfirm = () => {
     setCurrentStep("batch");
   };
 
+  // Handle schema saved as template
+  const handleSchemaSaved = (newSchemaId: string) => {
+    setSchemaId(newSchemaId);
+  };
+
+  // Handle batch start
   const handleBatchStart = async () => {
     if (!schema || batchFiles.length === 0) return;
 
     setIsLoading(true);
     setError(null);
-    setBatchProgress({
-      current: 0,
-      total: batchFiles.length,
-      status: "processing",
-    });
+    setIsProcessing(true);
 
     try {
-      const batchResults = await extractBatch(batchFiles, schema, (current, total) => {
-        setBatchProgress({
-          current,
-          total,
-          status: "processing",
-        });
-      });
-
-      setResults(batchResults);
-      setBatchProgress({
-        current: batchFiles.length,
-        total: batchFiles.length,
-        status: "complete",
-      });
-
-      // Auto-advance to results after a short delay
-      setTimeout(() => setCurrentStep("results"), 1000);
-    } catch (err) {
-      console.error("Batch processing failed:", err);
-      setBatchProgress({
-        current: batchProgress.current,
-        total: batchFiles.length,
-        status: "error",
-        message:
-          err instanceof Error ? err.message : "Batch processing failed",
-      });
-      setError(
-        err instanceof Error ? err.message : "Batch processing failed"
+      const response = await startBatchExtraction(
+        batchFiles,
+        schema,
+        schemaId || undefined
       );
+      setBatchId(response.batch_id);
+    } catch (err) {
+      console.error("Batch start failed:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to start batch processing"
+      );
+      setIsProcessing(false);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Handle batch completion
+  const handleBatchComplete = useCallback((status: BatchStatusResponse) => {
+    // Convert batch status documents to editable results format
+    const editableResults: EditableExtractionResult[] = status.documents
+      .filter((doc) => doc.status === "completed")
+      .map((doc) => ({
+        id: doc.id, // This is actually the document ID, we'll need extraction IDs
+        document_id: doc.id,
+        source_file: doc.filename,
+        page_number: 1,
+        extracted_data: {}, // Will be populated from actual extractions
+        confidence: doc.confidence || 0,
+        warnings: doc.warnings,
+        is_reviewed: false,
+        manual_overrides: null,
+      }));
+
+    setResults(editableResults);
+    setIsProcessing(false);
+    setCurrentStep("results");
+  }, []);
+
+  // Handle batch error
+  const handleBatchError = useCallback((errorMsg: string) => {
+    setError(errorMsg);
+    setIsProcessing(false);
+  }, []);
+
+  // Reset to start
   const resetToStart = () => {
     setCurrentStep("upload");
     setSchema(null);
+    setSchemaId(null);
     setBatchFiles([]);
-    setBatchProgress({ current: 0, total: 0, status: "idle" });
+    setBatchId(null);
+    setIsProcessing(false);
     setResults([]);
     setError(null);
     setSelectedResult(null);
@@ -179,7 +206,7 @@ export default function App() {
 
   // Handle row click to open validation modal
   const handleRowClick = useCallback(
-    (result: ExtractionResult) => {
+    (result: EditableExtractionResult) => {
       setSelectedResult(result);
       // Find the matching PDF file from batch files
       const matchingFile = batchFiles.find(
@@ -209,7 +236,7 @@ export default function App() {
                 <h1 className="text-xl font-bold text-slate-100">
                   PDF Extractor
                 </h1>
-                <p className="text-xs text-slate-400">AI-Powered Document Processing</p>
+                <p className="text-xs text-slate-400">Enterprise Edition</p>
               </div>
             </div>
 
@@ -261,15 +288,15 @@ export default function App() {
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-100">
-                  Upload a Sample PDF
+                  Start Extraction
                 </h2>
                 <p className="text-slate-400 mt-2">
-                  We'll analyze the document structure and suggest an extraction
-                  schema
+                  Select a saved template or upload a sample PDF to discover the schema
                 </p>
               </div>
               <UploadZone
                 onFileSelect={handleSampleUpload}
+                onTemplateSelect={handleTemplateSelect}
                 isLoading={isLoading}
               />
             </div>
@@ -289,6 +316,7 @@ export default function App() {
                 schema={schema}
                 onSchemaChange={setSchema}
                 onConfirm={handleSchemaConfirm}
+                onSchemaSaved={handleSchemaSaved}
                 isLoading={isLoading}
               />
       </div>
@@ -298,14 +326,20 @@ export default function App() {
           {currentStep === "batch" && schema && (
             <div>
               <button
-                onClick={() => setCurrentStep("schema")}
+                onClick={() => setCurrentStep(schemaId ? "upload" : "schema")}
                 className="flex items-center gap-2 text-slate-400 hover:text-slate-200 mb-6 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Schema
+                {schemaId ? "Back to Start" : "Back to Schema"}
         </button>
 
-              {batchProgress.status === "idle" ? (
+              {isProcessing && batchId ? (
+                <LiveProgress
+                  batchId={batchId}
+                  onComplete={handleBatchComplete}
+                  onError={handleBatchError}
+                />
+              ) : (
                 <div className="max-w-2xl mx-auto space-y-6">
                   <div className="text-center">
                     <h2 className="text-2xl font-bold text-slate-100">
@@ -314,6 +348,9 @@ export default function App() {
                     <p className="text-slate-400 mt-2">
                       Using schema: <strong>{schema.name}</strong> (
                       {schema.fields.length} fields)
+                      {schemaId && (
+                        <span className="ml-2 text-emerald-400">• Saved Template</span>
+                      )}
         </p>
       </div>
 
@@ -334,14 +371,12 @@ export default function App() {
                     </button>
                   </div>
                 </div>
-              ) : (
-                <BatchProgress progress={batchProgress} files={batchFiles} />
               )}
             </div>
           )}
 
           {/* Step 4: Results */}
-          {currentStep === "results" && schema && results.length > 0 && (
+          {currentStep === "results" && schema && results.length > 0 && batchId && (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <button
@@ -352,11 +387,25 @@ export default function App() {
                   Start New Extraction
                 </button>
               </div>
-              <ResultsTable
-                results={results as ExtractBatchResponse[]}
+              <EditableResultsTable
+                results={results}
                 schema={schema}
+                batchId={batchId}
                 onRowClick={handleRowClick}
               />
+            </div>
+          )}
+
+          {/* Empty results fallback */}
+          {currentStep === "results" && results.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-slate-400">No results to display.</p>
+              <button
+                onClick={resetToStart}
+                className="mt-4 text-indigo-400 hover:text-indigo-300"
+              >
+                Start a new extraction
+              </button>
             </div>
           )}
         </div>
@@ -365,14 +414,20 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-16 py-6">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
-          AI PDF Extraction • Powered by GPT-4o
+          AI PDF Extraction • Enterprise Edition • Powered by GPT-4o
         </div>
       </footer>
 
       {/* Validation Modal */}
       {selectedResult && schema && (
         <ValidationModal
-          result={selectedResult}
+          result={{
+            source_file: selectedResult.source_file,
+            detected_schema: schema,
+            extracted_data: selectedResult.extracted_data,
+            confidence: selectedResult.confidence,
+            warnings: selectedResult.warnings,
+          }}
           schema={schema}
           pdfFile={selectedPdfFile}
           onClose={handleCloseModal}
