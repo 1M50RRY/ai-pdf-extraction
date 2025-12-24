@@ -107,6 +107,7 @@ logs/
 app/uploads/
 app/temp/
 *.pdf
+!app/test-pdfs/*/*.pdf
 !app/test-pdfs/*.pdf
 
 # Frontend build artifacts (when React is added)
