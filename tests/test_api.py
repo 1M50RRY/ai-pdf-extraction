@@ -57,14 +57,14 @@ class TestUploadSampleEndpoint:
 
 
 class TestExtractBatchEndpoint:
-    """Tests for POST /extract-batch endpoint."""
+    """Tests for POST /extract-batch-sync endpoint (legacy synchronous endpoint)."""
 
     def test_extract_batch_rejects_non_pdf(
         self, client: TestClient, sample_schema_json: str
     ):
         """Test that non-PDF files are rejected."""
         response = client.post(
-            "/extract-batch",
+            "/extract-batch-sync",
             files={"file": ("test.txt", b"not a pdf", "text/plain")},
             data={"confirmed_schema": sample_schema_json},
         )
@@ -74,7 +74,7 @@ class TestExtractBatchEndpoint:
     def test_extract_batch_rejects_invalid_schema(self, client: TestClient):
         """Test that invalid schema JSON is rejected."""
         response = client.post(
-            "/extract-batch",
+            "/extract-batch-sync",
             files={"file": ("test.pdf", b"%PDF-1.4 test", "application/pdf")},
             data={"confirmed_schema": "not valid json"},
         )
@@ -87,12 +87,47 @@ class TestExtractBatchEndpoint:
 
         bad_schema = json.dumps({"name": "Test", "fields": []})  # Empty fields
         response = client.post(
-            "/extract-batch",
+            "/extract-batch-sync",
             files={"file": ("test.pdf", b"%PDF-1.4 test", "application/pdf")},
             data={"confirmed_schema": bad_schema},
         )
         assert response.status_code == 400
         assert "Invalid schema" in response.json()["detail"]
+
+
+class TestAsyncBatchEndpoint:
+    """Tests for POST /extract-batch async endpoint."""
+
+    def test_extract_batch_requires_schema(self, client: TestClient):
+        """Test that either schema_id or confirmed_schema is required."""
+        response = client.post(
+            "/extract-batch",
+            files=[("files", ("test.pdf", b"%PDF-1.4 test", "application/pdf"))],
+        )
+        assert response.status_code == 400
+        assert "schema" in response.json()["detail"].lower()
+
+    def test_extract_batch_requires_files(
+        self, client: TestClient, sample_schema_json: str
+    ):
+        """Test that at least one file is required."""
+        response = client.post(
+            "/extract-batch",
+            data={"confirmed_schema": sample_schema_json},
+        )
+        assert response.status_code == 422  # FastAPI validation error
+
+    def test_extract_batch_rejects_non_pdf_files(
+        self, client: TestClient, sample_schema_json: str
+    ):
+        """Test that non-PDF files are rejected in batch."""
+        response = client.post(
+            "/extract-batch",
+            files=[("files", ("test.txt", b"not a pdf", "text/plain"))],
+            data={"confirmed_schema": sample_schema_json},
+        )
+        assert response.status_code == 400
+        assert "PDF" in response.json()["detail"]
 
 
 class TestCORS:
