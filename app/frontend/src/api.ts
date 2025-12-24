@@ -50,6 +50,7 @@ export interface DocumentStatus {
   warnings: string[];
   extraction_id: string | null;
   extracted_data: Record<string, unknown> | null;
+  field_confidences: Record<string, number> | null;
 }
 
 export interface BatchStatusResponse {
@@ -153,6 +154,9 @@ export async function uploadSample(file: File): Promise<UploadSampleResponse> {
 /**
  * Start async batch extraction of multiple PDFs
  * Returns a batch ID for status polling
+ * 
+ * IMPORTANT: Always sends confirmed_schema (user's current/edited schema).
+ * The schemaId is only for tracking purposes - the confirmed_schema is the source of truth.
  */
 export async function startBatchExtraction(
   files: File[],
@@ -166,11 +170,14 @@ export async function startBatchExtraction(
     formData.append("files", file);
   });
 
-  // Add schema (either by ID or inline)
+  // ALWAYS send the schema from the request - this is the user's potentially edited version
+  // The confirmed_schema takes priority on the backend (user edits win over saved templates)
+  formData.append("confirmed_schema", JSON.stringify(schema));
+  console.log("DEBUG: Sending schema to backend with fields:", schema.fields.map(f => f.name));
+  
+  // Also send schema_id for tracking/linking purposes (but confirmed_schema is source of truth)
   if (schemaId) {
     formData.append("schema_id", schemaId);
-  } else {
-    formData.append("confirmed_schema", JSON.stringify(schema));
   }
 
   const response = await api.post<StartBatchResponse>(

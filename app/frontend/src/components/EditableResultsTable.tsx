@@ -31,6 +31,7 @@ export interface EditableExtractionResult {
   page_number: number;
   extracted_data: Record<string, unknown>;
   confidence: number;
+  field_confidences: Record<string, number> | null;  // Per-field confidence for cell highlighting
   warnings: string[];
   is_reviewed: boolean;
   manual_overrides: Record<string, unknown> | null;
@@ -329,6 +330,8 @@ export function EditableResultsTable({
           const value = info.getValue();
           const row = info.row.original;
           const hasOverride = row.manual_overrides?.[field.name] !== undefined;
+          // Use per-field confidence if available, else fall back to global
+          const fieldConfidence = row.field_confidences?.[field.name] ?? row.confidence;
 
           return (
             <EditableCell
@@ -336,7 +339,7 @@ export function EditableResultsTable({
               extractionId={row.id}
               fieldName={field.name}
               hasOverride={hasOverride}
-              confidence={row.confidence}
+              confidence={fieldConfidence}
               onUpdate={handleCellUpdate}
             />
           );

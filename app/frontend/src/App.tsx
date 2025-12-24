@@ -174,6 +174,7 @@ export default function App() {
         page_number: 1,
         extracted_data: doc.extracted_data || {},
         confidence: doc.confidence || 0,
+        field_confidences: doc.field_confidences, // Per-field confidence for cell highlighting
         warnings: doc.warnings,
         is_reviewed: false,
         manual_overrides: null,
