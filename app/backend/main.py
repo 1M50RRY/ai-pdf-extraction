@@ -483,14 +483,22 @@ async def process_batch_documents(
                 for page_num, image in enumerate(page_images, start=1):
                     page_source = f"{filename} (page {page_num})"
                     try:
+                        # DEBUG: Verify the exact schema being sent to AI
+                        print(f"DEBUG: AI will extract using fields: {[f.name for f in schema.fields]}")
+                        logger.info(
+                            "DEBUG EXTRACTION: Sending to AI - schema='%s', fields=%s",
+                            schema.name,
+                            [f.name for f in schema.fields],
+                        )
                         result = await ai_service.extract_data(image, schema, page_source)
                         
-                        # Save extraction result
+                        # Save extraction result (including per-field confidences)
                         extraction = Extraction(
                             document_id=doc.id,
                             page_number=page_num,
                             data=result.extracted_data,
                             confidence=result.confidence,
+                            field_confidences=result.field_confidences,
                             warnings=result.warnings,
                         )
                         db.add(extraction)
@@ -576,10 +584,43 @@ async def extract_batch(
     Returns:
         Batch ID and initial status.
     """
-    # Resolve schema
+    # Resolve schema - PRIORITY: confirmed_schema (user edited) > schema_id (saved template)
+    # This ensures user's edited field names are used for extraction
     schema: SchemaDefinition | None = None
+    resolved_schema_id: uuid.UUID | None = None
 
-    if schema_id:
+    if confirmed_schema:
+        # User provided an inline schema (possibly edited from a template)
+        # This takes PRIORITY over schema_id to support the rename workflow
+        try:
+            schema_dict = json.loads(confirmed_schema)
+            schema = SchemaDefinition.model_validate(schema_dict)
+            logger.info(
+                "Using confirmed_schema from request body: %s (%d fields: %s)",
+                schema.name,
+                len(schema.fields),
+                [f.name for f in schema.fields],
+            )
+        except json.JSONDecodeError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid JSON in confirmed_schema: {e}",
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid schema: {e}",
+            )
+        
+        # If schema_id also provided, use it for tracking but schema content comes from request
+        if schema_id:
+            try:
+                resolved_schema_id = uuid.UUID(schema_id)
+            except ValueError:
+                pass  # Ignore invalid schema_id when confirmed_schema is primary
+
+    elif schema_id:
+        # Fall back to saved schema only if no inline schema provided
         try:
             schema_uuid = uuid.UUID(schema_id)
         except ValueError:
@@ -595,21 +636,13 @@ async def extract_batch(
                 detail=f"Schema {schema_id} not found",
             )
         schema = SchemaDefinition.model_validate(db_schema.structure)
-
-    elif confirmed_schema:
-        try:
-            schema_dict = json.loads(confirmed_schema)
-            schema = SchemaDefinition.model_validate(schema_dict)
-        except json.JSONDecodeError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid JSON in confirmed_schema: {e}",
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid schema: {e}",
-            )
+        resolved_schema_id = schema_uuid
+        logger.info(
+            "Using saved schema %s: %s (%d fields)",
+            schema_id,
+            schema.name,
+            len(schema.fields),
+        )
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -648,9 +681,9 @@ async def extract_batch(
         file_data.append((file.filename, content, file_hash))
         await file.close()
 
-    # Create batch record
+    # Create batch record (use resolved_schema_id for tracking)
     batch = DocumentBatch(
-        schema_id=uuid.UUID(schema_id) if schema_id else None,
+        schema_id=resolved_schema_id,
         total_documents=len(file_data),
     )
     db.add(batch)
@@ -756,6 +789,7 @@ async def get_batch_status(
         warnings: list[str] = []
         extraction_id = None
         extracted_data = None
+        field_confidences = None
         
         if doc.status == DocumentStatus.COMPLETED:
             extractions = db.query(Extraction).filter(Extraction.document_id == doc.id).all()
@@ -764,6 +798,7 @@ async def get_batch_status(
                 first_extraction = extractions[0]
                 extraction_id = str(first_extraction.id)
                 extracted_data = first_extraction.data
+                field_confidences = first_extraction.field_confidences
                 confidence = sum(e.confidence for e in extractions) / len(extractions)
                 for e in extractions:
                     warnings.extend(e.warnings or [])
@@ -778,6 +813,7 @@ async def get_batch_status(
                 warnings=warnings,
                 extraction_id=extraction_id,
                 extracted_data=extracted_data,
+                field_confidences=field_confidences,
             )
         )
 

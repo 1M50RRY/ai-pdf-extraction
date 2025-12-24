@@ -268,6 +268,12 @@ class Extraction(Base):
         nullable=False,
         default=0.0,
     )
+    field_confidences: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=None,
+        comment="Per-field confidence scores (0.0 to 1.0)",
+    )
     warnings: Mapped[list] = mapped_column(
         JSON,
         default=list,

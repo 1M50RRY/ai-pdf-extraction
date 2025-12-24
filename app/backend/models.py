@@ -165,7 +165,8 @@ class ExtractionResult(BaseModel):
         "detected_schema": SchemaDefinition,
         "extracted_data": dict,
         "confidence": float (0.0 to 1.0),
-        "warnings": List[str]
+        "warnings": List[str],
+        "field_confidences": dict[str, float]  # NEW: per-field confidence scores
     }
     """
 
@@ -190,6 +191,10 @@ class ExtractionResult(BaseModel):
     warnings: list[str] = Field(
         default_factory=list,
         description="List of warnings encountered during extraction",
+    )
+    field_confidences: dict[str, float] = Field(
+        default_factory=dict,
+        description="Per-field confidence scores (0.0 to 1.0) for UI highlighting",
     )
 
     @field_validator("confidence")
@@ -343,6 +348,10 @@ class DocumentStatusResponse(BaseModel):
     extracted_data: dict[str, Any] | None = Field(
         default=None,
         description="Extracted data fields (if completed)",
+    )
+    field_confidences: dict[str, float] | None = Field(
+        default=None,
+        description="Per-field confidence scores for UI highlighting (if completed)",
     )
 
 

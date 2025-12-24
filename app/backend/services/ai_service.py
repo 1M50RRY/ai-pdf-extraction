@@ -237,8 +237,28 @@ def validate_extracted_data(
     result = ValidationResult()
     result.validated_data = data.copy()
 
-    # Build field lookup
+    # Build field lookup from schema
+    schema_field_names = [f.name for f in schema.fields]
+    data_field_names = list(data.keys())
     field_map = {f.name: f for f in schema.fields}
+
+    # Debug logging for schema/data mismatch diagnosis
+    logger.info(
+        "Validating data against schema '%s'. Schema fields: %s. Data fields: %s",
+        schema.name,
+        schema_field_names,
+        data_field_names,
+    )
+
+    # Check for fields in data not in schema
+    extra_fields = set(data_field_names) - set(schema_field_names)
+    if extra_fields:
+        logger.warning("Data contains fields not in schema: %s", extra_fields)
+
+    # Check for fields in schema not in data
+    missing_fields = set(schema_field_names) - set(data_field_names)
+    if missing_fields:
+        logger.warning("Schema fields not found in data: %s", missing_fields)
 
     # Track currency fields for math checks
     currency_values: dict[str, float] = {}
@@ -246,8 +266,15 @@ def validate_extracted_data(
     for field_name, field_def in field_map.items():
         value = data.get(field_name)
 
-        # Null check for required fields
-        if value is None or (isinstance(value, str) and not value.strip()):
+        # Enhanced null/empty check - handles None, "", [], and whitespace strings
+        is_empty = (
+            value is None
+            or value == ""
+            or value == []
+            or (isinstance(value, str) and not value.strip())
+        )
+
+        if is_empty:
             if field_def.required:
                 result.warnings.append(
                     f"Required field '{field_name}' is missing or empty"
@@ -629,7 +656,7 @@ that are clearly visible in the document. If no mathematical relationships exist
 - Prioritize fields that would be most valuable in a database"""
 
     EXTRACTION_SYSTEM_PROMPT = """You are a precise Data Entry Clerk with exceptional attention to detail.
-Your task is to extract specific data fields from a document image.
+Your task is to extract specific data fields from a document image AND estimate your confidence for each field.
 
 ## Extraction Rules:
 
@@ -638,13 +665,21 @@ Your task is to extract specific data fields from a document image.
 3. **Preserve Original Format**: Keep dates, currencies, and numbers as they appear in the document.
 4. **No Assumptions**: Do not infer or calculate values unless explicitly stated in the document.
 
+## Confidence Scoring:
+For EVERY field you extract, provide a confidence score (0.0 to 1.0):
+- 1.0: Perfectly clear, no ambiguity
+- 0.8-0.99: Very confident, minor formatting uncertainty
+- 0.5-0.79: Somewhat confident, value partially visible or slightly unclear
+- 0.1-0.49: Low confidence, significant uncertainty or guessing
+- 0.0: Field not found, returning null
+
 ## Important Guidelines:
 - For currency fields: Include the currency symbol if visible (e.g., "$1,234.56")
 - For dates: Transcribe as shown, the system will normalize
-- For empty/missing fields: Return null, do not fabricate data
-- For ambiguous values: Choose the most likely interpretation and note uncertainty
+- For empty/missing fields: Return null with confidence 0.0
+- For ambiguous values: Choose the most likely interpretation and reflect uncertainty in confidence score
 
-Return data in valid JSON format with the exact field names specified."""
+Return data in the EXACT JSON format specified in the user prompt."""
 
     def __init__(
         self,
@@ -876,11 +911,23 @@ Return data in valid JSON format with the exact field names specified."""
             logger.info("Extracting data (MOCK MODE) for: %s", source_file)
             return self._get_mock_extraction(schema, source_file)
 
-        logger.info("Extracting data for: %s using schema: %s", source_file, schema.name)
+        # DEBUG: Log exact schema fields being used (no caching - rebuilt each time)
+        field_names = [f.name for f in schema.fields]
+        print(f"DEBUG AI_SERVICE: Extracting with fields: {field_names}")
+        logger.info(
+            "DEBUG AI_SERVICE: Extracting data for '%s' using schema '%s' with fields: %s",
+            source_file,
+            schema.name,
+            field_names,
+        )
+        
         base64_image = self._image_to_base64(image)
 
-        # Build dynamic extraction prompt
+        # Build dynamic extraction prompt (rebuilt fresh for each extraction - NO CACHING)
         extraction_prompt = self._build_extraction_prompt(schema)
+        
+        # DEBUG: Log first 500 chars of prompt to verify field names
+        logger.debug("DEBUG AI_SERVICE: Extraction prompt preview: %s...", extraction_prompt[:500])
 
         try:
             # Use standard chat.completions.create with json_object for logprobs access
@@ -914,18 +961,48 @@ Return data in valid JSON format with the exact field names specified."""
                 raise AIServiceError("Empty response from OpenAI")
 
             try:
-                extracted_data = json.loads(content)
+                response_data = json.loads(content)
             except json.JSONDecodeError as e:
                 logger.error("Failed to parse extraction response: %s", content[:500])
                 raise AIServiceError(f"Invalid JSON in extraction response: {e}") from e
 
-            # Calculate confidence from logprobs
+            # Extract data and field confidences from new response format
+            # Handle both new format (with extracted_data/field_confidences) and legacy format
+            if "extracted_data" in response_data and "field_confidences" in response_data:
+                extracted_data = response_data["extracted_data"]
+                field_confidences = response_data.get("field_confidences", {})
+                logger.info("Using new per-field confidence format")
+            else:
+                # Legacy format: response is just the data object
+                extracted_data = response_data
+                field_confidences = {}
+                logger.info("Using legacy extraction format (no per-field confidences)")
+
+            # Calculate global confidence from logprobs (fallback/comparison)
             logprobs_data = None
             if response.choices[0].logprobs and response.choices[0].logprobs.content:
                 logprobs_data = response.choices[0].logprobs.content
 
-            confidence = calculate_confidence_from_logprobs(logprobs_data)
-            logger.info("Extraction confidence: %.3f", confidence)
+            logprobs_confidence = calculate_confidence_from_logprobs(logprobs_data)
+
+            # Use average of field confidences if available, else fall back to logprobs
+            if field_confidences:
+                valid_confidences = [c for c in field_confidences.values() if isinstance(c, (int, float))]
+                if valid_confidences:
+                    avg_field_confidence = sum(valid_confidences) / len(valid_confidences)
+                    # Blend with logprobs confidence (weight field confidence higher)
+                    confidence = 0.7 * avg_field_confidence + 0.3 * logprobs_confidence
+                else:
+                    confidence = logprobs_confidence
+            else:
+                confidence = logprobs_confidence
+
+            logger.info(
+                "Extraction confidence: %.3f (logprobs: %.3f, field avg: %.3f)",
+                confidence,
+                logprobs_confidence,
+                sum(field_confidences.values()) / len(field_confidences) if field_confidences else 0.0,
+            )
 
             # Validate and post-process
             validation = validate_extracted_data(extracted_data, schema)
@@ -936,6 +1013,7 @@ Return data in valid JSON format with the exact field names specified."""
                 extracted_data=validation.validated_data,
                 confidence=confidence,
                 warnings=validation.warnings,
+                field_confidences=field_confidences,
             )
 
         except AIServiceError:
@@ -945,7 +1023,14 @@ Return data in valid JSON format with the exact field names specified."""
             raise AIServiceError(f"Data extraction failed: {e}") from e
 
     def _build_extraction_prompt(self, schema: SchemaDefinition) -> str:
-        """Build a dynamic extraction prompt from the schema."""
+        """Build a dynamic extraction prompt from the schema.
+        
+        NOTE: This is rebuilt fresh for EVERY extraction - no caching.
+        The field names come directly from the schema parameter passed in.
+        """
+        field_names = [f.name for f in schema.fields]
+        print(f"DEBUG _build_extraction_prompt: Building prompt for fields: {field_names}")
+        
         field_descriptions = []
         for field in schema.fields:
             required_marker = " (REQUIRED)" if field.required else " (optional)"
@@ -954,24 +1039,33 @@ Return data in valid JSON format with the exact field names specified."""
             )
 
         fields_text = "\n".join(field_descriptions)
-        field_names = [f.name for f in schema.fields]
 
         return f"""Extract the following fields from this document image.
 
 ## Fields to Extract:
 {fields_text}
 
-## Response Format:
-Return a JSON object with these exact keys: {json.dumps(field_names)}
+## Response Format (MUST follow this exact structure):
+Return a JSON object with TWO keys:
+1. `extracted_data`: Object with the field values
+2. `field_confidences`: Object with confidence scores (0.0-1.0) for each field
 
-For any field that cannot be found or is unclear, set its value to null.
+For any field that cannot be found or is unclear, set its value to null with confidence 0.0.
 Do not add any fields that are not in the list above.
 
 Example response structure:
 {{
-  "{field_names[0]}": "extracted value or null",
-  ...
-}}"""
+  "extracted_data": {{
+    "{field_names[0] if field_names else 'field_name'}": "extracted value or null",
+    ...
+  }},
+  "field_confidences": {{
+    "{field_names[0] if field_names else 'field_name'}": 0.95,
+    ...
+  }}
+}}
+
+Field names to extract: {json.dumps(field_names)}"""
 
     # =========================================================================
     # Legacy method for backwards compatibility
