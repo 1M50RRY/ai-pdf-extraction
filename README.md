@@ -12,11 +12,14 @@ A production-grade PDF data extraction service using OpenAI GPT-4o with structur
 - **Export Functionality**: Export results to CSV or JSON with schema-matched headers
 - **Type-Safe**: Full Pydantic validation for all inputs and outputs
 - **Universal Currency Parsing**: Handles international formats ($1,000.00, €1.000,00, etc.)
+- **PostgreSQL Persistence**: Schemas, documents, and extractions stored in a relational database
+- **Docker Ready**: Full Docker Compose setup for production deployment
 
 ## Tech Stack
 
 ### Backend
 - **Framework**: Python FastAPI + Pydantic + Uvicorn
+- **Database**: PostgreSQL 15 + SQLAlchemy 2.0 + Alembic
 - **AI**: OpenAI GPT-4o with vision capabilities and structured outputs
 - **PDF Processing**: pdf2image (poppler) for PDF to image conversion
 - **Validation**: simpleeval for safe dynamic math expression evaluation
@@ -29,20 +32,63 @@ A production-grade PDF data extraction service using OpenAI GPT-4o with structur
 - **Data Tables**: @tanstack/react-table for sortable, exportable tables
 - **Icons**: lucide-react
 
-## Prerequisites
+### Infrastructure
+- **Containerization**: Docker + Docker Compose
+- **Database**: PostgreSQL 15 Alpine
+- **Migrations**: Alembic with autogenerate support
+
+## Quick Start with Docker
+
+The fastest way to run the full application:
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd ai-pdf-extraction
+
+# Set your OpenAI API key
+export OPENAI_API_KEY="your-api-key-here"
+
+# Start all services
+docker compose up --build
+```
+
+Services will be available at:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Docs**: http://localhost:8000/docs
+- **PostgreSQL**: localhost:5432
+
+### Docker Commands
+
+```bash
+# Start in background
+docker compose up -d
+
+# View logs
+docker compose logs -f backend
+
+# Stop all services
+docker compose down
+
+# Reset database (removes all data)
+docker compose down -v
+```
+
+## Prerequisites (Local Development)
 
 ### System Dependencies
 
 **macOS:**
 
 ```bash
-brew install poppler
+brew install poppler postgresql
 ```
 
 **Ubuntu/Debian:**
 
 ```bash
-sudo apt-get install poppler-utils
+sudo apt-get install poppler-utils postgresql-client libpq-dev
 ```
 
 **Windows:**
@@ -54,125 +100,100 @@ Node.js 18+ recommended for the frontend.
 
 ### Python Environment
 
-Python 3.11+ recommended.
+Python 3.10+ recommended.
 
-## Installation
+## Local Development Setup
 
-### Backend Setup
+### 1. Database Setup
 
-1. **Clone and navigate:**
+Start PostgreSQL (or use Docker):
 
 ```bash
-cd ai-pdf-extraction
+# Using Docker for just the database
+docker compose up db -d
+
+# Or create a local database
+createdb extraction_db
 ```
 
-2. **Create virtual environment:**
+### 2. Backend Setup
 
 ```bash
+# Create virtual environment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
 
-3. **Install dependencies:**
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
-```
 
-4. **Set up environment variables:**
-
-```bash
+# Set environment variables
 export OPENAI_API_KEY="your-api-key-here"
+export DATABASE_URL="postgresql://user:password@localhost:5432/extraction_db"
+
+# Run database migrations
+cd app/backend
+alembic upgrade head
+
+# Start the backend
+uvicorn main:app --reload --port 8000
 ```
 
-### Frontend Setup
-
-1. **Navigate to frontend:**
+### 3. Frontend Setup
 
 ```bash
 cd app/frontend
-```
 
-2. **Install dependencies:**
-
-```bash
+# Install dependencies
 npm install
-```
 
-3. **Start development server:**
-
-```bash
+# Start development server
 npm run dev
 ```
 
 The frontend will be available at http://localhost:5173
 
-## Running the Application
+## Database Schema
 
-### Backend (Development Server)
+### Entity Relationship
 
-```bash
-uvicorn app.backend.main:app --reload --port 8000
+```
+SavedSchema (1) ──────< DocumentBatch (1) ──────< Document (1) ──────< Extraction
+     │                       │                        │                    │
+     │                       │                        │                    │
+  • id (UUID)             • id (UUID)              • id (UUID)          • id (UUID)
+  • name                  • schema_id (FK)         • batch_id (FK)      • document_id (FK)
+  • description           • name                   • filename           • page_number
+  • version               • created_at             • status             • data (JSON)
+  • structure (JSON)      • completed_at           • file_hash          • confidence
+  • created_at            • total_documents        • upload_date        • warnings (JSON)
+  • is_active             • successful_documents   • processed_at       • is_reviewed
+                          • failed_documents       • error_message      • manual_overrides
 ```
 
-Or run directly:
+### Document Status Flow
 
-```bash
-python -m app.backend.main
+```
+PENDING → PROCESSING → COMPLETED
+                    ↘ FAILED
 ```
 
-### Frontend (Development Server)
+## Database Migrations
 
 ```bash
-cd app/frontend
-npm run dev
+cd app/backend
+
+# Create a new migration (after modifying models_db.py)
+alembic revision --autogenerate -m "Description of changes"
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback one migration
+alembic downgrade -1
+
+# View migration history
+alembic history
 ```
-
-### Production Build
-
-```bash
-cd app/frontend
-npm run build
-```
-
-### API Documentation
-
-Once the backend is running, visit:
-
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## UI Workflow
-
-### 1. Sample Upload
-Upload a sample PDF to analyze. The AI will detect the document type and suggest an extraction schema.
-
-### 2. Schema Editor
-Review and customize the detected schema:
-- Rename fields
-- Change field types
-- Mark fields as required/optional
-- View AI-generated validation rules
-
-### 3. Batch Processing
-Upload multiple PDFs (5+) for batch extraction. Progress is displayed in real-time.
-
-### 4. Results View
-View extraction results in a sortable table:
-- **Confidence indicators**: Green (≥80%), Yellow (50-79%), Red (<50%)
-- **Warning badges**: Hover to see validation warnings
-- **Click any row** to open the side-by-side validation view
-
-### 5. Side-by-Side Validation
-When you click a row:
-- **Left panel**: PDF viewer with zoom and page navigation
-- **Right panel**: Extracted data in formatted or JSON view
-- Visually verify low-confidence extractions
-
-### 6. Export
-Export results using the buttons above the table:
-- **Export CSV**: Spreadsheet-compatible format with schema-matched headers
-- **Export JSON**: Full extraction data including schema and metadata
 
 ## API Endpoints
 
@@ -209,33 +230,71 @@ Returns extracted data for all pages.
 
 ```
 ai-pdf-extraction/
+├── docker-compose.yml          # Docker Compose configuration
 ├── app/
 │   ├── backend/
-│   │   ├── __init__.py
-│   │   ├── main.py              # FastAPI application
-│   │   ├── models.py            # Pydantic models
+│   │   ├── Dockerfile          # Backend container definition
+│   │   ├── main.py             # FastAPI application
+│   │   ├── models.py           # Pydantic API models
+│   │   ├── models_db.py        # SQLAlchemy ORM models
+│   │   ├── database.py         # Database connection setup
+│   │   ├── alembic.ini         # Alembic configuration
+│   │   ├── alembic/
+│   │   │   ├── env.py          # Migration environment
+│   │   │   └── versions/       # Migration files
 │   │   └── services/
-│   │       ├── __init__.py
-│   │       ├── pdf_service.py   # PDF processing
-│   │       └── ai_service.py    # OpenAI integration
+│   │       ├── pdf_service.py  # PDF processing
+│   │       └── ai_service.py   # OpenAI integration
 │   ├── frontend/
+│   │   ├── Dockerfile          # Frontend container definition
 │   │   ├── src/
 │   │   │   ├── components/
-│   │   │   │   ├── UploadZone.tsx      # File upload with drag-and-drop
-│   │   │   │   ├── SchemaEditor.tsx    # Schema customization
-│   │   │   │   ├── BatchProgress.tsx   # Progress indicator
-│   │   │   │   ├── ResultsTable.tsx    # Data table with export
-│   │   │   │   └── ValidationModal.tsx # Side-by-side PDF/data view
-│   │   │   ├── api.ts           # Backend API client
-│   │   │   ├── types.ts         # TypeScript types
-│   │   │   └── App.tsx          # Main application
-│   │   ├── package.json
-│   │   └── vite.config.ts
-│   └── test-pdfs/               # Sample PDFs for testing
-├── tests/                       # Test suite
+│   │   │   │   ├── UploadZone.tsx
+│   │   │   │   ├── SchemaEditor.tsx
+│   │   │   │   ├── BatchProgress.tsx
+│   │   │   │   ├── ResultsTable.tsx
+│   │   │   │   └── ValidationModal.tsx
+│   │   │   ├── api.ts
+│   │   │   ├── types.ts
+│   │   │   └── App.tsx
+│   │   └── package.json
+│   └── test-pdfs/
+├── tests/
 ├── requirements.txt
 └── README.md
 ```
+
+## UI Workflow
+
+### 1. Sample Upload
+Upload a sample PDF to analyze. The AI will detect the document type and suggest an extraction schema.
+
+### 2. Schema Editor
+Review and customize the detected schema:
+- Rename fields
+- Change field types
+- Mark fields as required/optional
+- View AI-generated validation rules
+
+### 3. Batch Processing
+Upload multiple PDFs (5+) for batch extraction. Progress is displayed in real-time.
+
+### 4. Results View
+View extraction results in a sortable table:
+- **Confidence indicators**: Green (≥80%), Yellow (50-79%), Red (<50%)
+- **Warning badges**: Hover to see validation warnings
+- **Click any row** to open the side-by-side validation view
+
+### 5. Side-by-Side Validation
+When you click a row:
+- **Left panel**: PDF viewer with zoom and page navigation
+- **Right panel**: Extracted data in formatted or JSON view
+- Visually verify low-confidence extractions
+
+### 6. Export
+Export results using the buttons above the table:
+- **Export CSV**: Spreadsheet-compatible format with schema-matched headers
+- **Export JSON**: Full extraction data including schema and metadata
 
 ## Schema Definition Example
 
@@ -296,10 +355,25 @@ The AI can detect and output validation rules for numerical relationships:
 sum(), round(x, n), abs(), min(), max(), sqrt(), log(), len()
 ```
 
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_API_KEY` | OpenAI API key (required) | - |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:password@localhost:5432/extraction_db` |
+| `SQL_DEBUG` | Enable SQL query logging | `false` |
+
 ## Testing
 
 ```bash
+# Run all tests
 pytest tests/ -v --cov=app
+
+# Run specific test file
+pytest tests/test_ai_service.py -v
+
+# Run with coverage report
+pytest tests/ --cov=app --cov-report=html
 ```
 
 ## Data Sources
