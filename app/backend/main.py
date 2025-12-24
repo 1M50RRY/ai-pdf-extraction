@@ -422,7 +422,9 @@ async def process_batch_documents(
     db_url: str,
 ) -> None:
     """
-    Background task to process documents in a batch.
+    Background task to process documents in a batch with CONCURRENT execution.
+
+    Uses asyncio.Semaphore to limit concurrent AI calls and avoid rate limits.
 
     Args:
         batch_id: The batch ID.
@@ -430,36 +432,40 @@ async def process_batch_documents(
         schema: The schema to use for extraction.
         db_url: Database URL for creating a new session.
     """
+    import asyncio
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    # Create a new session for the background task
-    engine = create_engine(db_url)
+    # Concurrency limit to avoid OpenAI rate limits
+    MAX_CONCURRENT_JOBS = 5
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_JOBS)
+
+    # Create engine and session factory (each task will get its own session)
+    engine = create_engine(db_url, pool_size=MAX_CONCURRENT_JOBS + 2, max_overflow=5)
     SessionLocal = sessionmaker(bind=engine)
-    db = SessionLocal()
 
     pdf_service = get_pdf_service()
     ai_service = get_ai_service()
 
-    try:
-        batch = db.query(DocumentBatch).filter(DocumentBatch.id == batch_id).first()
-        if not batch:
-            logger.error("Batch %s not found", batch_id)
-            return
+    # Track results from concurrent tasks
+    results: dict[str, tuple[bool, str]] = {}  # filename -> (success, error_message)
 
-        documents = db.query(Document).filter(Document.batch_id == batch_id).all()
-        doc_map = {d.filename: d for d in documents}
-
-        successful = 0
-        failed = 0
-
-        for filename, content, file_hash in file_data:
-            doc = doc_map.get(filename)
-            if not doc:
-                logger.warning("Document %s not found in batch", filename)
-                continue
-
+    async def process_single_document(
+        filename: str,
+        content: bytes,
+        file_hash: str,
+        doc_id: uuid.UUID,
+    ) -> tuple[bool, str | None]:
+        """Process a single document with semaphore-limited concurrency."""
+        async with semaphore:
+            # Each concurrent task gets its own DB session
+            db = SessionLocal()
             try:
+                doc = db.query(Document).filter(Document.id == doc_id).first()
+                if not doc:
+                    logger.warning("Document %s not found", filename)
+                    return (False, "Document not found")
+
                 # Update status to processing
                 doc.status = DocumentStatus.PROCESSING
                 db.commit()
@@ -473,8 +479,7 @@ async def process_batch_documents(
                     doc.error_message = f"PDF conversion failed: {e}"
                     doc.processed_at = datetime.utcnow()
                     db.commit()
-                    failed += 1
-                    continue
+                    return (False, str(e))
 
                 # Extract data from each page
                 total_confidence = 0.0
@@ -522,7 +527,6 @@ async def process_batch_documents(
                 doc.status = DocumentStatus.COMPLETED
                 doc.processed_at = datetime.utcnow()
                 db.commit()
-                successful += 1
 
                 logger.info(
                     "Processed document %s: %d pages, avg confidence %.2f",
@@ -530,13 +534,66 @@ async def process_batch_documents(
                     len(page_images),
                     total_confidence / len(page_images) if page_images else 0,
                 )
+                return (True, None)
 
             except Exception as e:
                 logger.exception("Error processing document %s", filename)
-                doc.status = DocumentStatus.FAILED
-                doc.error_message = str(e)
-                doc.processed_at = datetime.utcnow()
-                db.commit()
+                try:
+                    doc = db.query(Document).filter(Document.id == doc_id).first()
+                    if doc:
+                        doc.status = DocumentStatus.FAILED
+                        doc.error_message = str(e)
+                        doc.processed_at = datetime.utcnow()
+                        db.commit()
+                except Exception:
+                    pass
+                return (False, str(e))
+            finally:
+                db.close()
+
+    # Main batch processing logic
+    db = SessionLocal()
+    try:
+        batch = db.query(DocumentBatch).filter(DocumentBatch.id == batch_id).first()
+        if not batch:
+            logger.error("Batch %s not found", batch_id)
+            return
+
+        documents = db.query(Document).filter(Document.batch_id == batch_id).all()
+        doc_map = {d.filename: d for d in documents}
+
+        logger.info(
+            "Starting CONCURRENT batch processing: %d documents, max %d concurrent",
+            len(file_data),
+            MAX_CONCURRENT_JOBS,
+        )
+
+        # Create tasks for concurrent processing
+        tasks = []
+        for filename, content, file_hash in file_data:
+            doc = doc_map.get(filename)
+            if not doc:
+                logger.warning("Document %s not found in batch", filename)
+                continue
+            tasks.append(process_single_document(filename, content, file_hash, doc.id))
+
+        # Execute all tasks concurrently (limited by semaphore)
+        task_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Count successes and failures
+        successful = 0
+        failed = 0
+        for i, result in enumerate(task_results):
+            if isinstance(result, Exception):
+                logger.error("Task %d raised exception: %s", i, result)
+                failed += 1
+            elif isinstance(result, tuple):
+                success, error = result
+                if success:
+                    successful += 1
+                else:
+                    failed += 1
+            else:
                 failed += 1
 
         # Update batch statistics
@@ -546,7 +603,7 @@ async def process_batch_documents(
         db.commit()
 
         logger.info(
-            "Batch %s completed: %d successful, %d failed",
+            "Batch %s completed: %d successful, %d failed (concurrent processing)",
             batch_id,
             successful,
             failed,
@@ -556,6 +613,7 @@ async def process_batch_documents(
         logger.exception("Fatal error in batch processing: %s", e)
     finally:
         db.close()
+        engine.dispose()
 
 
 @app.post("/extract-batch", response_model=StartBatchResponse)
