@@ -166,13 +166,13 @@ export default function App() {
   const handleBatchComplete = useCallback((status: BatchStatusResponse) => {
     // Convert batch status documents to editable results format
     const editableResults: EditableExtractionResult[] = status.documents
-      .filter((doc) => doc.status === "completed")
+      .filter((doc) => doc.status === "completed" && doc.extracted_data)
       .map((doc) => ({
-        id: doc.id, // This is actually the document ID, we'll need extraction IDs
+        id: doc.extraction_id || doc.id, // Use extraction_id for editing
         document_id: doc.id,
         source_file: doc.filename,
         page_number: 1,
-        extracted_data: {}, // Will be populated from actual extractions
+        extracted_data: doc.extracted_data || {},
         confidence: doc.confidence || 0,
         warnings: doc.warnings,
         is_reviewed: false,

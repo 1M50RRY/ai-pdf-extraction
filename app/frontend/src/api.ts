@@ -48,6 +48,8 @@ export interface DocumentStatus {
   confidence: number | null;
   error_message: string | null;
   warnings: string[];
+  extraction_id: string | null;
+  extracted_data: Record<string, unknown> | null;
 }
 
 export interface BatchStatusResponse {
