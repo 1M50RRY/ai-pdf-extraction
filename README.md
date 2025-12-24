@@ -21,11 +21,13 @@ A production-grade PDF data extraction service using OpenAI GPT-4o with structur
 ### System Dependencies
 
 **macOS:**
+
 ```bash
 brew install poppler
 ```
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt-get install poppler-utils
 ```
@@ -40,22 +42,26 @@ Python 3.11+ recommended.
 ## Installation
 
 1. **Clone and navigate:**
+
 ```bash
 cd ai-pdf-extraction
 ```
 
 2. **Create virtual environment:**
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. **Install dependencies:**
+
 ```bash
 pip install -r requirements.txt
 ```
 
 4. **Set up environment variables:**
+
 ```bash
 export OPENAI_API_KEY="your-api-key-here"
 ```
@@ -69,6 +75,7 @@ uvicorn app.backend.main:app --reload --port 8000
 ```
 
 Or run directly:
+
 ```bash
 python -m app.backend.main
 ```
@@ -76,18 +83,21 @@ python -m app.backend.main
 ### API Documentation
 
 Once running, visit:
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
 ## API Endpoints
 
 ### Health Check
-```
+
+```sh
 GET /health
 ```
 
 ### Upload Sample PDF
-```
+
+```sh
 POST /upload-sample
 Content-Type: multipart/form-data
 
@@ -97,7 +107,8 @@ file: <PDF file>
 Returns a suggested extraction schema based on AI analysis.
 
 ### Extract Batch
-```
+
+```sh
 POST /extract-batch
 Content-Type: multipart/form-data
 
@@ -109,7 +120,7 @@ Returns extracted data for all pages.
 
 ## Project Structure
 
-```
+```ini
 ai-pdf-extraction/
 ├── app/
 │   ├── backend/
@@ -174,6 +185,13 @@ ai-pdf-extraction/
 ```bash
 pytest tests/ -v --cov=app
 ```
+
+# Data Sources
+
+- https://www.kaggle.com/datasets/osamahosamabdellatif/high-quality-invoice-images-for-ocr
+- https://universe.roboflow.com/jakob-awn1e/receipt-or-invoice
+- https://data.nsw.gov.au/data/dataset/nsw-education-government-school-student-attendance-bulletin
+- https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000789019&type=8&dateb=&owner=include&count=40&search_text=
 
 ## License
 
