@@ -10,11 +10,17 @@ from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
-# Get database URL from environment variable
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://user:password@localhost:5432/extraction_db"
-)
+# Try to load settings from config module (when running as package)
+# Fall back to environment variables (when running standalone, e.g., alembic)
+try:
+    from .config import get_settings
+    settings = get_settings()
+    DATABASE_URL = settings.database_url
+    SQL_DEBUG = settings.sql_debug
+except ImportError:
+    # Running standalone (e.g., alembic migrations)
+    DATABASE_URL = os.environ["DATABASE_URL"]  # Required - will raise KeyError if not set
+    SQL_DEBUG = os.getenv("SQL_DEBUG", "false").lower() == "true"
 
 # Create SQLAlchemy engine
 # - pool_pre_ping: Verify connections are alive before using them
@@ -25,7 +31,7 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
-    echo=os.getenv("SQL_DEBUG", "false").lower() == "true",
+    echo=SQL_DEBUG,
 )
 
 # Create session factory
@@ -68,4 +74,3 @@ def init_db() -> None:
     from . import models_db  # noqa: F401
     
     Base.metadata.create_all(bind=engine)
-

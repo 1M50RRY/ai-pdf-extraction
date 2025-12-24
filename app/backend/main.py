@@ -30,33 +30,66 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from .database import get_db, init_db
-from .models import (
-    ApproveExtractionRequest,
-    ApproveExtractionResponse,
-    BatchStatusResponse,
-    DocumentStatusResponse,
-    ExtractBatchResponse,
-    ExtractionDetailResponse,
-    ExtractionResult,
-    HealthResponse,
-    SavedSchemaResponse,
-    SaveSchemaRequest,
-    SchemaDefinition,
-    SchemaListResponse,
-    StartBatchResponse,
-    UpdateExtractionRequest,
-    UploadSampleResponse,
-)
-from .models_db import (
-    Document,
-    DocumentBatch,
-    DocumentStatus,
-    Extraction,
-    SavedSchema,
-)
-from .services.ai_service import AIService, AIServiceError, get_ai_service
-from .services.pdf_service import PDFConversionError, PDFService, get_pdf_service
+# Handle both package imports (when running as module) and standalone imports (uvicorn main:app)
+try:
+    from .database import DATABASE_URL, get_db, init_db
+except ImportError:
+    from database import DATABASE_URL, get_db, init_db
+
+try:
+    from .models import (
+        ApproveExtractionRequest,
+        ApproveExtractionResponse,
+        BatchStatusResponse,
+        DocumentStatusResponse,
+        ExtractBatchResponse,
+        ExtractionDetailResponse,
+        ExtractionResult,
+        HealthResponse,
+        SavedSchemaResponse,
+        SaveSchemaRequest,
+        SchemaDefinition,
+        SchemaListResponse,
+        StartBatchResponse,
+        UpdateExtractionRequest,
+        UploadSampleResponse,
+    )
+    from .models_db import (
+        Document,
+        DocumentBatch,
+        DocumentStatus,
+        Extraction,
+        SavedSchema,
+    )
+    from .services.ai_service import AIService, AIServiceError, get_ai_service
+    from .services.pdf_service import PDFConversionError, PDFService, get_pdf_service
+except ImportError:
+    from models import (
+        ApproveExtractionRequest,
+        ApproveExtractionResponse,
+        BatchStatusResponse,
+        DocumentStatusResponse,
+        ExtractBatchResponse,
+        ExtractionDetailResponse,
+        ExtractionResult,
+        HealthResponse,
+        SavedSchemaResponse,
+        SaveSchemaRequest,
+        SchemaDefinition,
+        SchemaListResponse,
+        StartBatchResponse,
+        UpdateExtractionRequest,
+        UploadSampleResponse,
+    )
+    from models_db import (
+        Document,
+        DocumentBatch,
+        DocumentStatus,
+        Extraction,
+        SavedSchema,
+    )
+    from services.ai_service import AIService, AIServiceError, get_ai_service
+    from services.pdf_service import PDFConversionError, PDFService, get_pdf_service
 
 # Configure logging
 logging.basicConfig(
@@ -543,8 +576,6 @@ async def extract_batch(
     Returns:
         Batch ID and initial status.
     """
-    from .database import DATABASE_URL
-
     # Resolve schema
     schema: SchemaDefinition | None = None
 
@@ -720,12 +751,19 @@ async def get_batch_status(
     # Build document status list
     doc_statuses = []
     for doc in documents:
-        # Get extraction confidence if completed
+        # Get extraction data if completed
         confidence = None
         warnings: list[str] = []
+        extraction_id = None
+        extracted_data = None
+        
         if doc.status == DocumentStatus.COMPLETED:
             extractions = db.query(Extraction).filter(Extraction.document_id == doc.id).all()
             if extractions:
+                # Use first extraction (usually page 1)
+                first_extraction = extractions[0]
+                extraction_id = str(first_extraction.id)
+                extracted_data = first_extraction.data
                 confidence = sum(e.confidence for e in extractions) / len(extractions)
                 for e in extractions:
                     warnings.extend(e.warnings or [])
@@ -738,6 +776,8 @@ async def get_batch_status(
                 confidence=round(confidence, 3) if confidence is not None else None,
                 error_message=doc.error_message,
                 warnings=warnings,
+                extraction_id=extraction_id,
+                extracted_data=extracted_data,
             )
         )
 

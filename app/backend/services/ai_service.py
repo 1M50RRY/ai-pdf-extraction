@@ -21,12 +21,21 @@ from price_parser import Price
 from pydantic import BaseModel, Field
 from simpleeval import NameNotDefined, SimpleEval
 
-from ..models import (
-    ExtractionResult,
-    FieldDefinition,
-    FieldType,
-    SchemaDefinition,
-)
+# Handle both package imports and standalone imports
+try:
+    from ..models import (
+        ExtractionResult,
+        FieldDefinition,
+        FieldType,
+        SchemaDefinition,
+    )
+except ImportError:
+    from models import (
+        ExtractionResult,
+        FieldDefinition,
+        FieldType,
+        SchemaDefinition,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -647,18 +656,28 @@ Return data in valid JSON format with the exact field names specified."""
         Initialize the AI service.
 
         Args:
-            api_key: OpenAI API key. If None, reads from OPENAI_API_KEY env var.
+            api_key: OpenAI API key. If None, reads from config/environment.
             model: OpenAI model to use (must support vision).
             use_mock: If True, return mock data instead of calling OpenAI.
         """
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        # Load API key from settings if not provided
+        if api_key is None:
+            try:
+                from ..config import get_settings
+                settings = get_settings()
+                api_key = settings.openai_api_key
+            except ImportError:
+                # Fallback to direct env var if config not available
+                api_key = os.getenv("OPENAI_API_KEY")
+
+        self.api_key = api_key
         self.model = model
         self.use_mock = use_mock or not self.api_key
         self._client = None
 
         if self.use_mock:
             logger.warning(
-                "AI Service running in MOCK MODE. Set OPENAI_API_KEY for real extraction."
+                "AI Service running in MOCK MODE. Set OPENAI_API_KEY in .env for real extraction."
             )
 
     @property

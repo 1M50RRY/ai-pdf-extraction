@@ -23,7 +23,11 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .database import Base
+# Handle both package imports (FastAPI) and standalone imports (Alembic)
+try:
+    from .database import Base
+except ImportError:
+    from database import Base
 
 
 class DocumentStatus(enum.Enum):

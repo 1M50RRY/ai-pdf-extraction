@@ -28,11 +28,8 @@ import models_db  # noqa: E402, F401
 # Set target metadata for autogenerate
 target_metadata = Base.metadata
 
-# Get database URL from environment variable
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://user:password@localhost:5432/extraction_db"
-)
+# Get database URL from environment variable (required)
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 
 def run_migrations_offline() -> None:

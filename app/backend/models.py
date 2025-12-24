@@ -336,6 +336,14 @@ class DocumentStatusResponse(BaseModel):
         default_factory=list,
         description="Extraction warnings",
     )
+    extraction_id: str | None = Field(
+        default=None,
+        description="Extraction ID for editing (if completed)",
+    )
+    extracted_data: dict[str, Any] | None = Field(
+        default=None,
+        description="Extracted data fields (if completed)",
+    )
 
 
 class BatchStatusResponse(BaseModel):
