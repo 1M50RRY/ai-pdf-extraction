@@ -473,19 +473,16 @@ class TestAIServiceMock:
 
     def test_mock_mode_enabled_without_api_key(self):
         """Test that mock mode is enabled without API key."""
-        import os
+        # Explicitly pass empty string as API key to force mock mode
+        # (None would trigger loading from settings/.env)
+        service = AIService(api_key="", use_mock=False)
+        # Empty string is falsy, so use_mock should be enabled
+        assert service.use_mock is True
 
-        # Temporarily remove API key
-        original = os.environ.get("OPENAI_API_KEY")
-        if original:
-            del os.environ["OPENAI_API_KEY"]
-
-        try:
-            service = AIService(api_key=None)
-            assert service.use_mock is True
-        finally:
-            if original:
-                os.environ["OPENAI_API_KEY"] = original
+    def test_mock_mode_enabled_explicitly(self):
+        """Test that mock mode can be explicitly enabled."""
+        service = AIService(api_key="fake-key", use_mock=True)
+        assert service.use_mock is True
 
     def test_mock_schema_has_fields(self):
         """Test that mock schema has valid fields."""
