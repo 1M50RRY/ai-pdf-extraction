@@ -110,6 +110,48 @@ class TestSchemaDefinition:
                 ],
             )
 
+    def test_schema_with_validation_rules(self):
+        """Test schema with validation rules."""
+        schema = SchemaDefinition(
+            name="Invoice",
+            fields=[
+                FieldDefinition(name="subtotal", type=FieldType.CURRENCY, description="Subtotal"),
+                FieldDefinition(name="tax", type=FieldType.CURRENCY, description="Tax"),
+                FieldDefinition(name="total", type=FieldType.CURRENCY, description="Total"),
+            ],
+            validation_rules=["total == subtotal + tax"],
+        )
+        assert len(schema.validation_rules) == 1
+        assert schema.validation_rules[0] == "total == subtotal + tax"
+
+    def test_schema_validation_rules_default_empty(self):
+        """Test that validation_rules defaults to empty list."""
+        schema = SchemaDefinition(
+            name="Simple",
+            fields=[
+                FieldDefinition(name="field1", type=FieldType.STRING, description="Field 1"),
+            ],
+        )
+        assert schema.validation_rules == []
+
+    def test_schema_validation_rules_filters_invalid(self):
+        """Test that invalid rule formats are filtered out."""
+        schema = SchemaDefinition(
+            name="Test",
+            fields=[
+                FieldDefinition(name="a", type=FieldType.NUMBER, description="A"),
+                FieldDefinition(name="b", type=FieldType.NUMBER, description="B"),
+            ],
+            validation_rules=[
+                "a == b + c",  # Valid format
+                "invalid rule without equals",  # Invalid - filtered
+                "",  # Empty - filtered
+            ],
+        )
+        # Only valid rules should remain
+        assert len(schema.validation_rules) == 1
+        assert schema.validation_rules[0] == "a == b + c"
+
 
 class TestExtractionResult:
     """Tests for ExtractionResult model."""
