@@ -4,17 +4,30 @@ A production-grade PDF data extraction service using OpenAI GPT-4o with structur
 
 ## Features
 
-- **Schema Detection**: Upload a sample PDF and get AI-suggested extraction schemas
-- **Batch Extraction**: Extract structured data from multi-page PDFs
+- **Smart Schema Discovery**: Upload a sample PDF and get AI-suggested extraction schemas with Chain-of-Thought reasoning
+- **Dynamic Validation Rules**: AI-generated math validation rules (e.g., `total == subtotal + tax`)
+- **Batch Extraction**: Extract structured data from multiple PDFs with progress tracking
+- **Confidence Scoring**: Logprob-based confidence calculations for each extraction
+- **Side-by-Side Validation**: View PDF alongside extracted data to verify low-confidence fields
+- **Export Functionality**: Export results to CSV or JSON with schema-matched headers
 - **Type-Safe**: Full Pydantic validation for all inputs and outputs
-- **Extensible**: Support for multiple field types (currency, date, email, etc.)
+- **Universal Currency Parsing**: Handles international formats ($1,000.00, €1.000,00, etc.)
 
 ## Tech Stack
 
-- **Backend**: Python FastAPI + Pydantic + Uvicorn
-- **AI**: OpenAI GPT-4o with vision capabilities
+### Backend
+- **Framework**: Python FastAPI + Pydantic + Uvicorn
+- **AI**: OpenAI GPT-4o with vision capabilities and structured outputs
 - **PDF Processing**: pdf2image (poppler) for PDF to image conversion
-- **Frontend**: React + Tailwind (coming soon)
+- **Validation**: simpleeval for safe dynamic math expression evaluation
+- **Currency Parsing**: price-parser for universal currency format support
+
+### Frontend
+- **Framework**: React 19 + TypeScript + Vite
+- **Styling**: Tailwind CSS 4
+- **PDF Viewing**: react-pdf for in-browser PDF rendering
+- **Data Tables**: @tanstack/react-table for sortable, exportable tables
+- **Icons**: lucide-react
 
 ## Prerequisites
 
@@ -35,11 +48,17 @@ sudo apt-get install poppler-utils
 **Windows:**
 Download poppler from: https://github.com/oschwartz10612/poppler-windows/releases
 
+### Node.js
+
+Node.js 18+ recommended for the frontend.
+
 ### Python Environment
 
 Python 3.11+ recommended.
 
 ## Installation
+
+### Backend Setup
 
 1. **Clone and navigate:**
 
@@ -66,9 +85,31 @@ pip install -r requirements.txt
 export OPENAI_API_KEY="your-api-key-here"
 ```
 
+### Frontend Setup
+
+1. **Navigate to frontend:**
+
+```bash
+cd app/frontend
+```
+
+2. **Install dependencies:**
+
+```bash
+npm install
+```
+
+3. **Start development server:**
+
+```bash
+npm run dev
+```
+
+The frontend will be available at http://localhost:5173
+
 ## Running the Application
 
-### Development Server
+### Backend (Development Server)
 
 ```bash
 uvicorn app.backend.main:app --reload --port 8000
@@ -80,12 +121,58 @@ Or run directly:
 python -m app.backend.main
 ```
 
+### Frontend (Development Server)
+
+```bash
+cd app/frontend
+npm run dev
+```
+
+### Production Build
+
+```bash
+cd app/frontend
+npm run build
+```
+
 ### API Documentation
 
-Once running, visit:
+Once the backend is running, visit:
 
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
+
+## UI Workflow
+
+### 1. Sample Upload
+Upload a sample PDF to analyze. The AI will detect the document type and suggest an extraction schema.
+
+### 2. Schema Editor
+Review and customize the detected schema:
+- Rename fields
+- Change field types
+- Mark fields as required/optional
+- View AI-generated validation rules
+
+### 3. Batch Processing
+Upload multiple PDFs (5+) for batch extraction. Progress is displayed in real-time.
+
+### 4. Results View
+View extraction results in a sortable table:
+- **Confidence indicators**: Green (≥80%), Yellow (50-79%), Red (<50%)
+- **Warning badges**: Hover to see validation warnings
+- **Click any row** to open the side-by-side validation view
+
+### 5. Side-by-Side Validation
+When you click a row:
+- **Left panel**: PDF viewer with zoom and page navigation
+- **Right panel**: Extracted data in formatted or JSON view
+- Visually verify low-confidence extractions
+
+### 6. Export
+Export results using the buttons above the table:
+- **Export CSV**: Spreadsheet-compatible format with schema-matched headers
+- **Export JSON**: Full extraction data including schema and metadata
 
 ## API Endpoints
 
@@ -120,20 +207,32 @@ Returns extracted data for all pages.
 
 ## Project Structure
 
-```ini
+```
 ai-pdf-extraction/
 ├── app/
 │   ├── backend/
 │   │   ├── __init__.py
-│   │   ├── main.py           # FastAPI application
-│   │   ├── models.py         # Pydantic models
+│   │   ├── main.py              # FastAPI application
+│   │   ├── models.py            # Pydantic models
 │   │   └── services/
 │   │       ├── __init__.py
 │   │       ├── pdf_service.py   # PDF processing
 │   │       └── ai_service.py    # OpenAI integration
-│   ├── frontend/             # React frontend (coming soon)
-│   └── test-pdfs/            # Sample PDFs for testing
-├── tests/                    # Test suite
+│   ├── frontend/
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── UploadZone.tsx      # File upload with drag-and-drop
+│   │   │   │   ├── SchemaEditor.tsx    # Schema customization
+│   │   │   │   ├── BatchProgress.tsx   # Progress indicator
+│   │   │   │   ├── ResultsTable.tsx    # Data table with export
+│   │   │   │   └── ValidationModal.tsx # Side-by-side PDF/data view
+│   │   │   ├── api.ts           # Backend API client
+│   │   │   ├── types.ts         # TypeScript types
+│   │   │   └── App.tsx          # Main application
+│   │   ├── package.json
+│   │   └── vite.config.ts
+│   └── test-pdfs/               # Sample PDFs for testing
+├── tests/                       # Test suite
 ├── requirements.txt
 └── README.md
 ```
@@ -164,15 +263,18 @@ ai-pdf-extraction/
       "description": "Date of the invoice",
       "required": true
     }
+  ],
+  "validation_rules": [
+    "total_amount == subtotal + tax"
   ]
 }
 ```
 
 ## Supported Field Types
 
-- `string` - Text fields
-- `currency` - Money amounts
-- `date` - Dates in any format
+- `string` - Text fields (default catch-all)
+- `currency` - Money amounts (auto-parsed from any format)
+- `date` - Dates (normalized to YYYY-MM-DD)
 - `number` - Numeric values
 - `boolean` - Yes/No values
 - `email` - Email addresses
@@ -180,13 +282,27 @@ ai-pdf-extraction/
 - `address` - Physical addresses
 - `percentage` - Percentage values
 
+## Validation Rules
+
+The AI can detect and output validation rules for numerical relationships:
+
+```python
+# Supported syntax
+"total == subtotal + tax"
+"net_income == gross_income - expenses"
+"discount_amount == round(subtotal * discount_rate, 2)"
+
+# Available functions
+sum(), round(x, n), abs(), min(), max(), sqrt(), log(), len()
+```
+
 ## Testing
 
 ```bash
 pytest tests/ -v --cov=app
 ```
 
-# Data Sources
+## Data Sources
 
 - https://www.kaggle.com/datasets/osamahosamabdellatif/high-quality-invoice-images-for-ocr
 - https://universe.roboflow.com/jakob-awn1e/receipt-or-invoice
@@ -196,4 +312,3 @@ pytest tests/ -v --cov=app
 ## License
 
 MIT
-
