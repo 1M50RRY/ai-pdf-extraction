@@ -261,3 +261,161 @@ class HealthResponse(BaseModel):
     status: str = Field(default="healthy")
     version: str = Field(default="1.0.0")
 
+
+# =============================================================================
+# Schema Registry Models
+# =============================================================================
+
+
+class SaveSchemaRequest(BaseModel):
+    """Request model for saving a schema template."""
+
+    schema_definition: SchemaDefinition = Field(
+        ...,
+        description="The schema definition to save",
+        alias="schema",
+    )
+
+
+class SavedSchemaResponse(BaseModel):
+    """Response model for a saved schema."""
+
+    id: str = Field(..., description="Unique schema ID (UUID)")
+    name: str = Field(..., description="Schema name")
+    description: str = Field(default="", description="Schema description")
+    version: str = Field(default="1.0", description="Schema version")
+    structure: SchemaDefinition = Field(..., description="Full schema definition")
+    created_at: str = Field(..., description="Creation timestamp (ISO format)")
+    is_active: bool = Field(default=True, description="Whether schema is active")
+
+
+class SchemaListResponse(BaseModel):
+    """Response model for listing schemas."""
+
+    schemas: list[SavedSchemaResponse] = Field(
+        default_factory=list,
+        description="List of saved schemas",
+    )
+    total: int = Field(..., ge=0, description="Total number of schemas")
+
+
+# =============================================================================
+# Batch Processing Models
+# =============================================================================
+
+
+class StartBatchRequest(BaseModel):
+    """Request model for starting a batch extraction."""
+
+    schema_id: str | None = Field(
+        default=None,
+        description="ID of saved schema to use (optional if schema_definition is provided)",
+    )
+    schema_definition: SchemaDefinition | None = Field(
+        default=None,
+        description="Inline schema definition (optional if schema_id is provided)",
+        alias="schema",
+    )
+
+
+class DocumentStatusResponse(BaseModel):
+    """Status of a single document in a batch."""
+
+    id: str = Field(..., description="Document ID (UUID)")
+    filename: str = Field(..., description="Original filename")
+    status: str = Field(..., description="Processing status")
+    confidence: float | None = Field(
+        default=None,
+        description="Extraction confidence (if completed)",
+    )
+    error_message: str | None = Field(
+        default=None,
+        description="Error message (if failed)",
+    )
+    warnings: list[str] = Field(
+        default_factory=list,
+        description="Extraction warnings",
+    )
+
+
+class BatchStatusResponse(BaseModel):
+    """Response model for batch status."""
+
+    id: str = Field(..., description="Batch ID (UUID)")
+    status: str = Field(..., description="Overall batch status")
+    created_at: str = Field(..., description="Creation timestamp")
+    completed_at: str | None = Field(default=None, description="Completion timestamp")
+    total_documents: int = Field(..., ge=0, description="Total documents in batch")
+    completed_documents: int = Field(..., ge=0, description="Completed documents")
+    failed_documents: int = Field(..., ge=0, description="Failed documents")
+    progress_percent: float = Field(
+        ...,
+        ge=0.0,
+        le=100.0,
+        description="Progress percentage",
+    )
+    documents: list[DocumentStatusResponse] = Field(
+        default_factory=list,
+        description="Status of each document",
+    )
+    schema_id: str | None = Field(default=None, description="Schema used for batch")
+    schema_name: str | None = Field(default=None, description="Schema name")
+
+
+class StartBatchResponse(BaseModel):
+    """Response model for starting a batch."""
+
+    batch_id: str = Field(..., description="Batch ID (UUID)")
+    message: str = Field(..., description="Status message")
+    total_documents: int = Field(..., ge=0, description="Number of documents queued")
+    status: str = Field(default="processing", description="Initial status")
+
+
+# =============================================================================
+# Human-in-the-Loop Models
+# =============================================================================
+
+
+class UpdateExtractionRequest(BaseModel):
+    """Request model for updating extraction data."""
+
+    data: dict[str, Any] = Field(
+        ...,
+        description="Partial or full extracted data to update",
+    )
+
+
+class ExtractionDetailResponse(BaseModel):
+    """Detailed extraction response."""
+
+    id: str = Field(..., description="Extraction ID (UUID)")
+    document_id: str = Field(..., description="Parent document ID")
+    page_number: int = Field(..., ge=1, description="Page number")
+    data: dict[str, Any] = Field(..., description="Extracted data")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score")
+    warnings: list[str] = Field(default_factory=list, description="Warnings")
+    is_reviewed: bool = Field(..., description="Whether reviewed by human")
+    manual_overrides: dict[str, Any] | None = Field(
+        default=None,
+        description="Fields that were manually corrected",
+    )
+    created_at: str = Field(..., description="Creation timestamp")
+    reviewed_at: str | None = Field(default=None, description="Review timestamp")
+
+
+class ApproveExtractionRequest(BaseModel):
+    """Request model for approving extractions."""
+
+    reviewed_by: str | None = Field(
+        default=None,
+        description="Name/ID of the reviewer",
+    )
+
+
+class ApproveExtractionResponse(BaseModel):
+    """Response model for batch approval."""
+
+    message: str = Field(..., description="Status message")
+    approved_count: int = Field(..., ge=0, description="Number of extractions approved")
+    batch_id: str = Field(..., description="Batch ID")
+
