@@ -1,6 +1,6 @@
 # AI PDF Extraction Application
 
-A production-grade PDF data extraction service using OpenAI GPT-4o with structured outputs.
+A production-grade PDF data extraction service using OpenAI GPT-4.1 with structured outputs.
 
 ## Features
 
@@ -18,14 +18,16 @@ A production-grade PDF data extraction service using OpenAI GPT-4o with structur
 ## Tech Stack
 
 ### Backend
+
 - **Framework**: Python FastAPI + Pydantic + Uvicorn
 - **Database**: PostgreSQL 15 + SQLAlchemy 2.0 + Alembic
-- **AI**: OpenAI GPT-4o with vision capabilities and structured outputs
+- **AI**: OpenAI GPT-4.1 with vision capabilities and structured outputs
 - **PDF Processing**: pdf2image (poppler) for PDF to image conversion
 - **Validation**: simpleeval for safe dynamic math expression evaluation
 - **Currency Parsing**: price-parser for universal currency format support
 
 ### Frontend
+
 - **Framework**: React 19 + TypeScript + Vite
 - **Styling**: Tailwind CSS 4
 - **PDF Viewing**: react-pdf for in-browser PDF rendering
@@ -33,6 +35,7 @@ A production-grade PDF data extraction service using OpenAI GPT-4o with structur
 - **Icons**: lucide-react
 
 ### Infrastructure
+
 - **Containerization**: Docker + Docker Compose
 - **Database**: PostgreSQL 15 Alpine
 - **Migrations**: Alembic with autogenerate support
@@ -54,6 +57,7 @@ docker compose up --build
 ```
 
 Services will be available at:
+
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
@@ -267,32 +271,42 @@ ai-pdf-extraction/
 ## UI Workflow
 
 ### 1. Sample Upload
+
 Upload a sample PDF to analyze. The AI will detect the document type and suggest an extraction schema.
 
 ### 2. Schema Editor
+
 Review and customize the detected schema:
+
 - Rename fields
 - Change field types
 - Mark fields as required/optional
 - View AI-generated validation rules
 
 ### 3. Batch Processing
+
 Upload multiple PDFs (5+) for batch extraction. Progress is displayed in real-time.
 
 ### 4. Results View
+
 View extraction results in a sortable table:
+
 - **Confidence indicators**: Green (≥80%), Yellow (50-79%), Red (<50%)
 - **Warning badges**: Hover to see validation warnings
 - **Click any row** to open the side-by-side validation view
 
 ### 5. Side-by-Side Validation
+
 When you click a row:
+
 - **Left panel**: PDF viewer with zoom and page navigation
 - **Right panel**: Extracted data in formatted or JSON view
 - Visually verify low-confidence extractions
 
 ### 6. Export
+
 Export results using the buttons above the table:
+
 - **Export CSV**: Spreadsheet-compatible format with schema-matched headers
 - **Export JSON**: Full extraction data including schema and metadata
 
@@ -323,9 +337,7 @@ Export results using the buttons above the table:
       "required": true
     }
   ],
-  "validation_rules": [
-    "total_amount == subtotal + tax"
-  ]
+  "validation_rules": ["total_amount == subtotal + tax"]
 }
 ```
 
@@ -357,11 +369,11 @@ sum(), round(x, n), abs(), min(), max(), sqrt(), log(), len()
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OPENAI_API_KEY` | OpenAI API key (required) | - |
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:password@localhost:5432/extraction_db` |
-| `SQL_DEBUG` | Enable SQL query logging | `false` |
+| Variable         | Description                  | Default                                                   |
+| ---------------- | ---------------------------- | --------------------------------------------------------- |
+| `OPENAI_API_KEY` | OpenAI API key (required)    | -                                                         |
+| `DATABASE_URL`   | PostgreSQL connection string | `postgresql://user:password@localhost:5432/extraction_db` |
+| `SQL_DEBUG`      | Enable SQL query logging     | `false`                                                   |
 
 ## Testing
 

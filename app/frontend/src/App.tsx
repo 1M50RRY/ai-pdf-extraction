@@ -463,7 +463,7 @@ export default function App() {
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-16 py-6">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
-          AI PDF Extraction • Enterprise Edition • Powered by GPT-4o
+          AI PDF Extraction • Enterprise Edition • Powered by GPT-4.1
         </div>
       </footer>
 
@@ -476,6 +476,7 @@ export default function App() {
             extracted_data: selectedResult.extracted_data,
             confidence: selectedResult.confidence,
             warnings: selectedResult.warnings,
+            field_confidences: selectedResult.field_confidences || undefined,
           }}
           schema={schema}
           pdfFile={selectedPdfFile}

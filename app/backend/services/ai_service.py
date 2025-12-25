@@ -1,7 +1,7 @@
 """
 AI service for document schema detection and data extraction.
 
-Uses OpenAI GPT-4o with structured outputs via Pydantic models.
+Uses OpenAI GPT-4.1 with structured outputs via Pydantic models.
 Implements high-sophistication prompting with Chain-of-Thought reasoning
 and logprobs-based confidence scoring.
 """
@@ -677,7 +677,7 @@ class AIService:
     """
     Service for AI-powered document analysis and extraction.
 
-    Uses OpenAI's GPT-4o model with vision capabilities for:
+    Uses OpenAI's GPT-4.1 model with vision capabilities for:
     - Analyzing document structure and suggesting extraction schemas
     - Extracting data according to confirmed schemas with confidence scoring
     """
@@ -880,7 +880,7 @@ Return data in the EXACT JSON format specified in the user prompt."""
             logger.info("Discovering schema (MOCK MODE)")
             return self._get_mock_schema()
 
-        logger.info("Discovering schema using GPT-4o structured outputs")
+        logger.info("Discovering schema using GPT-4.1 structured outputs")
         base64_image = self._image_to_base64(image)
 
         try:
