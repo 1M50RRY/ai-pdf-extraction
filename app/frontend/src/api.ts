@@ -328,15 +328,28 @@ export async function healthCheck(): Promise<boolean> {
 // Batch History
 // =============================================================================
 
+export interface BatchExtractionSummary {
+  id: string;
+  document_id: string;
+  filename: string;
+  extracted_data: Record<string, unknown>;
+  confidence: number;
+  field_confidences: Record<string, number>;
+  warnings: string[];
+  is_reviewed: boolean;
+}
+
 export interface BatchSummary {
   id: string;
   schema_name: string | null;
+  schema_id: string | null;
   created_at: string;
   completed_at: string | null;
   total_documents: number;
   successful_documents: number;
   failed_documents: number;
   status: string;
+  extractions: BatchExtractionSummary[];
 }
 
 export interface BatchHistoryResponse {
