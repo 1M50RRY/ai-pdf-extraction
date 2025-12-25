@@ -165,7 +165,7 @@ export async function startBatchExtraction(
   schemaId?: string
 ): Promise<StartBatchResponse> {
   const formData = new FormData();
-  
+
   // Add all files
   files.forEach((file) => {
     formData.append("files", file);
@@ -175,7 +175,7 @@ export async function startBatchExtraction(
   // The confirmed_schema takes priority on the backend (user edits win over saved templates)
   formData.append("confirmed_schema", JSON.stringify(schema));
   console.log("DEBUG: Sending schema to backend with fields:", schema.fields.map(f => f.name));
-  
+
   // Also send schema_id for tracking/linking purposes (but confirmed_schema is source of truth)
   if (schemaId) {
     formData.append("schema_id", schemaId);

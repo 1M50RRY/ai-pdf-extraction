@@ -237,165 +237,134 @@ def validate_extracted_data(
     result = ValidationResult()
     result.validated_data = data.copy()
 
-    # Normalize extracted data keys for case-insensitive matching
-    # This fixes "Ghost Warnings" where keys exist but don't match due to case/whitespace
-    norm_data: dict[str, tuple[str, Any]] = {}
+    # Step 1: Create normalized_data map for case-insensitive matching
+    # Format: {normalized_key: value}
+    normalized_data: dict[str, Any] = {}
     for k, v in data.items():
-        norm_key = k.lower().strip()
-        # Store both normalized key and original key for lookup
-        if norm_key not in norm_data:
-            norm_data[norm_key] = (k, v)
-        else:
-            # If duplicate normalized keys, prefer the one that matches original case
-            original_key, _ = norm_data[norm_key]
-            if k == original_key:
-                norm_data[norm_key] = (k, v)
+        norm_key = k.strip().lower()
+        # If duplicate normalized keys, keep the first one (or prefer exact match)
+        if norm_key not in normalized_data:
+            normalized_data[norm_key] = v
 
-    # Build field lookup from schema
-    schema_field_names = [f.name for f in schema.fields]
-    data_field_names = list(data.keys())
-    field_map = {f.name: f for f in schema.fields}
+    # Step 2: Use set() to deduplicate warnings
+    warnings_set: set[str] = set()
 
-    # Debug logging for schema/data mismatch diagnosis
-    logger.info(
-        "Validating data against schema '%s'. Schema fields: %s. Data fields: %s",
-        schema.name,
-        schema_field_names,
-        data_field_names,
-    )
-
-    # Check for fields in data not in schema (informational only, no warnings)
-    extra_fields = set(data_field_names) - set(schema_field_names)
-    if extra_fields:
-        logger.debug("Data contains extra fields not in schema: %s (trusting data keys)", extra_fields)
-
-    # Check for fields in schema not in data (informational only, no warnings)
-    # We trust the data keys - this may happen due to renaming
-    missing_fields = set(schema_field_names) - set(data_field_names)
-    if missing_fields:
-        logger.debug("Schema fields not in data: %s (trusting data keys)", missing_fields)
-
-    # Track currency fields for math checks
+    # Step 3: Track currency values for math checks
     currency_values: dict[str, float] = {}
 
-    for field_name, field_def in field_map.items():
+    # Step 4: Iterate through schema fields
+    for field in schema.fields:
         # Normalize field name for lookup
-        norm_field_name = field_name.lower().strip()
+        norm_field_name = field.name.strip().lower()
         
-        # Try exact match first, then normalized match
-        if field_name in data:
-            original_key = field_name
-            value = data[field_name]
-        elif norm_field_name in norm_data:
-            original_key, value = norm_data[norm_field_name]
-            logger.debug("Matched field '%s' to data key '%s' via normalization", field_name, original_key)
-        else:
-            # Field not in data - skip (no warning, trust data keys)
-            continue
-            
-        # Use original key for validated_data to preserve casing
-        if original_key != field_name:
-            # Update validated_data to use schema field name
-            if original_key in result.validated_data:
-                result.validated_data[field_name] = result.validated_data.pop(original_key)
-
-        # Relaxed null/empty check - ONLY warn for explicitly None or empty string ""
-        # Do NOT warn for whitespace, empty lists, or missing keys (trust data)
-        is_explicitly_empty = value is None or value == ""
-
-        if is_explicitly_empty:
-            if field_def.required:
-                result.warnings.append(
-                    f"Required field '{field_name}' has empty value"
-                )
-            result.validated_data[field_name] = None
+        # Lookup value in normalized_data
+        value = normalized_data.get(norm_field_name)
+        
+        # Debug logging for each field
+        logger.info(
+            "Validating field '%s': Found value '%s' (type: %s)",
+            field.name,
+            value,
+            type(value).__name__ if value is not None else "None",
+        )
+        
+        # Step 5: Only warn if value is explicitly None or "" (empty string)
+        # Do NOT warn for missing keys - they affect completeness, not validation
+        if value is None or value == "":
+            if field.required:
+                warnings_set.add(f"Required field '{field.name}' has empty value")
+            # Set to None in validated_data
+            result.validated_data[field.name] = None
             continue
 
-        # Type-specific validation
-        if field_def.type == FieldType.ARRAY:
+        # Step 6: Type-specific validation
+        if field.type == FieldType.ARRAY:
             # Validate array fields - ensure it's a list
             if not isinstance(value, list):
-                result.warnings.append(
-                    f"Field '{field_name}' expected array/list, got: {type(value).__name__}"
+                warnings_set.add(
+                    f"Field '{field.name}' expected array/list, got: {type(value).__name__}"
                 )
-                result.validated_data[field_name] = [] if value is None else [value]
+                result.validated_data[field.name] = [] if value is None else [value]
             else:
                 # Array is valid - keep as-is (no validation of nested items)
-                result.validated_data[field_name] = value
-                logger.debug("Validated array field '%s' with %d items", field_name, len(value))
+                result.validated_data[field.name] = value
+                logger.debug("Validated array field '%s' with %d items", field.name, len(value))
             continue
 
-        elif field_def.type == FieldType.DATE:
+        elif field.type == FieldType.DATE:
             parsed = parse_date(value)
             if parsed is None:
-                result.warnings.append(
-                    f"Field '{field_name}' has invalid date format: '{value}'. Expected YYYY-MM-DD."
+                warnings_set.add(
+                    f"Field '{field.name}' has invalid date format: '{value}'. Expected YYYY-MM-DD."
                 )
             else:
-                result.validated_data[field_name] = parsed
+                result.validated_data[field.name] = parsed
 
-        elif field_def.type == FieldType.CURRENCY:
+        elif field.type == FieldType.CURRENCY:
             parsed = parse_currency(value)
             if parsed is None:
-                result.warnings.append(
-                    f"Field '{field_name}' has invalid currency format: '{value}'"
+                warnings_set.add(
+                    f"Field '{field.name}' has invalid currency format: '{value}'"
                 )
             else:
-                # Use schema field name for currency_values (not original data key)
-                currency_values[field_name] = parsed
+                # Use schema field name for currency_values
+                currency_values[field.name] = parsed
                 # Keep original string but note the parsed value
-                result.validated_data[field_name] = value
+                result.validated_data[field.name] = value
 
-        elif field_def.type == FieldType.NUMBER:
+        elif field.type == FieldType.NUMBER:
             try:
                 if isinstance(value, str):
                     # Remove commas and parse
                     cleaned = value.replace(",", "").strip()
                     parsed = float(cleaned) if "." in cleaned else int(cleaned)
-                    result.validated_data[field_name] = parsed
+                    result.validated_data[field.name] = parsed
                 elif not isinstance(value, (int, float)):
-                    result.warnings.append(
-                        f"Field '{field_name}' expected number, got: '{value}'"
+                    warnings_set.add(
+                        f"Field '{field.name}' expected number, got: '{value}'"
                     )
             except ValueError:
-                result.warnings.append(
-                    f"Field '{field_name}' has invalid number format: '{value}'"
+                warnings_set.add(
+                    f"Field '{field.name}' has invalid number format: '{value}'"
                 )
 
-        elif field_def.type == FieldType.BOOLEAN:
+        elif field.type == FieldType.BOOLEAN:
             if isinstance(value, bool):
                 pass  # Already correct
             elif isinstance(value, str):
                 lower = value.lower().strip()
                 if lower in ("true", "yes", "y", "1", "on"):
-                    result.validated_data[field_name] = True
+                    result.validated_data[field.name] = True
                 elif lower in ("false", "no", "n", "0", "off"):
-                    result.validated_data[field_name] = False
+                    result.validated_data[field.name] = False
                 else:
-                    result.warnings.append(
-                        f"Field '{field_name}' has ambiguous boolean value: '{value}'"
+                    warnings_set.add(
+                        f"Field '{field.name}' has ambiguous boolean value: '{value}'"
                     )
 
-        elif field_def.type == FieldType.EMAIL:
+        elif field.type == FieldType.EMAIL:
             if isinstance(value, str) and "@" not in value:
-                result.warnings.append(
-                    f"Field '{field_name}' appears to be invalid email: '{value}'"
+                warnings_set.add(
+                    f"Field '{field.name}' appears to be invalid email: '{value}'"
                 )
 
-        elif field_def.type == FieldType.PERCENTAGE:
+        elif field.type == FieldType.PERCENTAGE:
             # Normalize percentage strings
             if isinstance(value, str):
                 cleaned = value.replace("%", "").strip()
                 try:
                     float(cleaned)  # Validate it's a number
                 except ValueError:
-                    result.warnings.append(
-                        f"Field '{field_name}' has invalid percentage format: '{value}'"
+                    warnings_set.add(
+                        f"Field '{field.name}' has invalid percentage format: '{value}'"
                     )
 
-    # Math checks using dynamic validation rules from schema
+    # Step 7: Math checks using dynamic validation rules from schema
     # Pass extracted_data to filter out rules referencing nested array fields
     _perform_math_checks(currency_values, schema.validation_rules, result, data)
+
+    # Step 8: Convert warnings set to list (deduplicated)
+    result.warnings = list(warnings_set)
 
     return result
 
@@ -771,9 +740,18 @@ Your task is to extract specific data fields from a document image AND estimate 
 ## Extraction Rules:
 
 1. **Strict Adherence**: Only extract the fields specified. Do not add extra fields.
-2. **Accuracy Over Guessing**: If a value is unclear or not present, return null.
+2. **Accuracy Over Guessing**: If a value is unclear or not present, return null. DO NOT HALLUCINATE.
 3. **Preserve Original Format**: Keep dates, currencies, and numbers as they appear in the document.
 4. **No Assumptions**: Do not infer or calculate values unless explicitly stated in the document.
+
+## Critical: Headers and Footers
+Pay special attention to **Headers and Footers** for:
+- Organization Names (issuing_organization, company_name, etc.)
+- Addresses (mailing_address, business_address, etc.)
+- Websites (website, url, company_website, etc.)
+- Contact Information (phone, email, etc.)
+
+These fields are often located in document headers or footers, not just in the main body.
 
 ## Confidence Scoring:
 For EVERY field you extract, provide a confidence score (0.0 to 1.0):
@@ -786,8 +764,9 @@ For EVERY field you extract, provide a confidence score (0.0 to 1.0):
 ## Important Guidelines:
 - For currency fields: Include the currency symbol if visible (e.g., "$1,234.56")
 - For dates: Transcribe as shown, the system will normalize
-- For empty/missing fields: Return null with confidence 0.0
+- For empty/missing fields: Return null with confidence 0.0. DO NOT HALLUCINATE OR MAKE UP VALUES.
 - For ambiguous values: Choose the most likely interpretation and reflect uncertainty in confidence score
+- If a field is not found after checking headers, body, and footers: Return null, do not guess.
 
 Return data in the EXACT JSON format specified in the user prompt."""
 
@@ -1092,16 +1071,29 @@ Return data in the EXACT JSON format specified in the user prompt."""
                 field_confidences = {}
                 logger.info("Using legacy extraction format (no per-field confidences)")
 
-            # Calculate global confidence as average of field confidences
-            # This ensures consistency: if all fields are 1.0, document is 1.0
+            # Calculate global confidence as average of ONLY non-null extracted fields
+            # Missing fields should NOT drag down confidence - they affect completeness (warnings), not confidence
             if field_confidences:
-                valid_confidences = [c for c in field_confidences.values() if isinstance(c, (int, float)) and 0 <= c <= 1]
-                if valid_confidences:
-                    confidence = sum(valid_confidences) / len(valid_confidences)
+                # Only include confidences for fields that actually have non-null values
+                present_field_confidences = []
+                for field_name, conf in field_confidences.items():
+                    # Check if field has a non-null value in extracted_data
+                    field_value = extracted_data.get(field_name)
+                    if field_value is not None and field_value != "":
+                        if isinstance(conf, (int, float)) and 0 <= conf <= 1:
+                            present_field_confidences.append(conf)
+                
+                if present_field_confidences:
+                    confidence = sum(present_field_confidences) / len(present_field_confidences)
+                    logger.info(
+                        "Global confidence: %.3f (from %d non-null fields, avg of present fields)",
+                        confidence,
+                        len(present_field_confidences),
+                    )
                 else:
-                    # Fallback: if no valid field confidences, default to 0.5
-                    confidence = 0.5
-                    logger.warning("No valid field confidences found, defaulting to 0.5")
+                    # No fields found - return 0.0
+                    confidence = 0.0
+                    logger.warning("No non-null fields found, confidence set to 0.0")
             else:
                 # Fallback: calculate from logprobs if field confidences not available
                 logprobs_data = None
