@@ -237,6 +237,20 @@ def validate_extracted_data(
     result = ValidationResult()
     result.validated_data = data.copy()
 
+    # Normalize extracted data keys for case-insensitive matching
+    # This fixes "Ghost Warnings" where keys exist but don't match due to case/whitespace
+    norm_data: dict[str, tuple[str, Any]] = {}
+    for k, v in data.items():
+        norm_key = k.lower().strip()
+        # Store both normalized key and original key for lookup
+        if norm_key not in norm_data:
+            norm_data[norm_key] = (k, v)
+        else:
+            # If duplicate normalized keys, prefer the one that matches original case
+            original_key, _ = norm_data[norm_key]
+            if k == original_key:
+                norm_data[norm_key] = (k, v)
+
     # Build field lookup from schema
     schema_field_names = [f.name for f in schema.fields]
     data_field_names = list(data.keys())
@@ -265,11 +279,25 @@ def validate_extracted_data(
     currency_values: dict[str, float] = {}
 
     for field_name, field_def in field_map.items():
-        # Skip if field is not in data (trust data keys, no warning for missing)
-        if field_name not in data:
+        # Normalize field name for lookup
+        norm_field_name = field_name.lower().strip()
+        
+        # Try exact match first, then normalized match
+        if field_name in data:
+            original_key = field_name
+            value = data[field_name]
+        elif norm_field_name in norm_data:
+            original_key, value = norm_data[norm_field_name]
+            logger.debug("Matched field '%s' to data key '%s' via normalization", field_name, original_key)
+        else:
+            # Field not in data - skip (no warning, trust data keys)
             continue
             
-        value = data.get(field_name)
+        # Use original key for validated_data to preserve casing
+        if original_key != field_name:
+            # Update validated_data to use schema field name
+            if original_key in result.validated_data:
+                result.validated_data[field_name] = result.validated_data.pop(original_key)
 
         # Relaxed null/empty check - ONLY warn for explicitly None or empty string ""
         # Do NOT warn for whitespace, empty lists, or missing keys (trust data)
@@ -300,6 +328,7 @@ def validate_extracted_data(
                     f"Field '{field_name}' has invalid currency format: '{value}'"
                 )
             else:
+                # Use schema field name for currency_values (not original data key)
                 currency_values[field_name] = parsed
                 # Keep original string but note the parsed value
                 result.validated_data[field_name] = value
@@ -979,30 +1008,29 @@ Return data in the EXACT JSON format specified in the user prompt."""
                 field_confidences = {}
                 logger.info("Using legacy extraction format (no per-field confidences)")
 
-            # Calculate global confidence from logprobs (fallback/comparison)
-            logprobs_data = None
-            if response.choices[0].logprobs and response.choices[0].logprobs.content:
-                logprobs_data = response.choices[0].logprobs.content
-
-            logprobs_confidence = calculate_confidence_from_logprobs(logprobs_data)
-
-            # Use average of field confidences if available, else fall back to logprobs
+            # Calculate global confidence as average of field confidences
+            # This ensures consistency: if all fields are 1.0, document is 1.0
             if field_confidences:
-                valid_confidences = [c for c in field_confidences.values() if isinstance(c, (int, float))]
+                valid_confidences = [c for c in field_confidences.values() if isinstance(c, (int, float)) and 0 <= c <= 1]
                 if valid_confidences:
-                    avg_field_confidence = sum(valid_confidences) / len(valid_confidences)
-                    # Blend with logprobs confidence (weight field confidence higher)
-                    confidence = 0.7 * avg_field_confidence + 0.3 * logprobs_confidence
+                    confidence = sum(valid_confidences) / len(valid_confidences)
                 else:
-                    confidence = logprobs_confidence
+                    # Fallback: if no valid field confidences, default to 0.5
+                    confidence = 0.5
+                    logger.warning("No valid field confidences found, defaulting to 0.5")
             else:
-                confidence = logprobs_confidence
+                # Fallback: calculate from logprobs if field confidences not available
+                logprobs_data = None
+                if response.choices[0].logprobs and response.choices[0].logprobs.content:
+                    logprobs_data = response.choices[0].logprobs.content
+                confidence = calculate_confidence_from_logprobs(logprobs_data)
+                logger.warning("Field confidences not available, using logprobs-based confidence")
 
             logger.info(
-                "Extraction confidence: %.3f (logprobs: %.3f, field avg: %.3f)",
+                "Extraction confidence: %.3f (from %d field confidences, avg: %.3f)",
                 confidence,
-                logprobs_confidence,
-                sum(field_confidences.values()) / len(field_confidences) if field_confidences else 0.0,
+                len(field_confidences) if field_confidences else 0,
+                sum(field_confidences.values()) / len(field_confidences) if field_confidences and len(field_confidences) > 0 else 0.0,
             )
 
             # Validate and post-process
