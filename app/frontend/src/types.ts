@@ -33,6 +33,7 @@ export interface ExtractionResult {
   extracted_data: Record<string, unknown>;
   confidence: number;
   warnings: string[];
+  field_confidences?: Record<string, number>;
 }
 
 export interface UploadSampleResponse {

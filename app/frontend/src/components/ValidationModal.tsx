@@ -244,13 +244,7 @@ export function ValidationModal({
                     const value = result.extracted_data[field.name];
                     const hasValue = value !== null && value !== undefined && value !== "";
                     // Get field confidence if available (from field_confidences in result)
-                    const fieldConfidence =
-                      "field_confidences" in result &&
-                      result.field_confidences &&
-                      typeof result.field_confidences === "object" &&
-                      field.name in result.field_confidences
-                        ? (result.field_confidences as Record<string, number>)[field.name]
-                        : undefined;
+                    const fieldConfidence = result.field_confidences?.[field.name];
 
                     return (
                       <div
@@ -286,6 +280,7 @@ export function ValidationModal({
                               value={value}
                               confidence={fieldConfidence}
                               fieldName={field.name}
+                              editable={false}
                             />
                           ) : (
                             <span className="text-slate-500 italic">—</span>
