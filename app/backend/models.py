@@ -436,3 +436,31 @@ class ApproveExtractionResponse(BaseModel):
     approved_count: int = Field(..., ge=0, description="Number of extractions approved")
     batch_id: str = Field(..., description="Batch ID")
 
+
+# =============================================================================
+# Batch History Models
+# =============================================================================
+
+
+class BatchSummary(BaseModel):
+    """Summary of a batch for history listing."""
+
+    id: str = Field(..., description="Batch ID (UUID)")
+    schema_name: str | None = Field(default=None, description="Schema name used")
+    created_at: str = Field(..., description="Creation timestamp")
+    completed_at: str | None = Field(default=None, description="Completion timestamp")
+    total_documents: int = Field(..., ge=0, description="Total documents")
+    successful_documents: int = Field(..., ge=0, description="Successful extractions")
+    failed_documents: int = Field(..., ge=0, description="Failed extractions")
+    status: str = Field(..., description="Overall status")
+
+
+class BatchHistoryResponse(BaseModel):
+    """Response model for batch history."""
+
+    batches: list[BatchSummary] = Field(
+        default_factory=list,
+        description="List of batch summaries",
+    )
+    total: int = Field(..., ge=0, description="Total batches")
+

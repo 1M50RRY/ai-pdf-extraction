@@ -40,7 +40,9 @@ try:
     from .models import (
         ApproveExtractionRequest,
         ApproveExtractionResponse,
+        BatchHistoryResponse,
         BatchStatusResponse,
+        BatchSummary,
         DocumentStatusResponse,
         ExtractBatchResponse,
         ExtractionDetailResponse,
@@ -67,7 +69,9 @@ except ImportError:
     from models import (
         ApproveExtractionRequest,
         ApproveExtractionResponse,
+        BatchHistoryResponse,
         BatchStatusResponse,
+        BatchSummary,
         DocumentStatusResponse,
         ExtractBatchResponse,
         ExtractionDetailResponse,
@@ -966,6 +970,80 @@ async def get_batch_results(
         total_pages=len(results),
         successful_extractions=successful,
         average_confidence=round(avg_confidence, 3),
+    )
+
+
+# =============================================================================
+# Batch History Endpoint
+# =============================================================================
+
+
+@app.get("/batches", response_model=BatchHistoryResponse)
+async def get_batch_history(
+    db: Session = Depends(get_db),
+    limit: int = 50,
+    offset: int = 0,
+) -> BatchHistoryResponse:
+    """
+    Get history of all batch processing jobs.
+
+    Args:
+        db: Database session.
+        limit: Maximum number of batches to return.
+        offset: Number of batches to skip.
+
+    Returns:
+        List of batch summaries with processing stats.
+    """
+    # Query batches ordered by creation date (newest first)
+    batches = (
+        db.query(DocumentBatch)
+        .order_by(DocumentBatch.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    
+    total = db.query(DocumentBatch).count()
+
+    summaries = []
+    for batch in batches:
+        # Get schema name if available
+        schema_name = None
+        if batch.schema_id:
+            saved_schema = db.query(SavedSchema).filter(SavedSchema.id == batch.schema_id).first()
+            if saved_schema:
+                schema_name = saved_schema.name
+
+        # Determine status
+        if batch.completed_at:
+            batch_status = "completed"
+        else:
+            # Check if any documents are still processing
+            processing_count = (
+                db.query(Document)
+                .filter(Document.batch_id == batch.id)
+                .filter(Document.status == DocumentStatus.PROCESSING)
+                .count()
+            )
+            batch_status = "processing" if processing_count > 0 else "pending"
+
+        summaries.append(
+            BatchSummary(
+                id=str(batch.id),
+                schema_name=schema_name,
+                created_at=batch.created_at.isoformat(),
+                completed_at=batch.completed_at.isoformat() if batch.completed_at else None,
+                total_documents=batch.total_documents,
+                successful_documents=batch.successful_documents,
+                failed_documents=batch.failed_documents,
+                status=batch_status,
+            )
+        )
+
+    return BatchHistoryResponse(
+        batches=summaries,
+        total=total,
     )
 
 
