@@ -257,8 +257,14 @@ def validate_extracted_data(
         # Normalize field name for lookup
         norm_field_name = field.name.strip().lower()
         
-        # Lookup value in normalized_data
-        value = normalized_data.get(norm_field_name)
+        # Check if key exists in normalized_data (trust AI if key is missing)
+        if norm_field_name not in normalized_data:
+            # Key is totally missing - DO NOT warn (AI likely renamed it or skipped it)
+            logger.debug("Field '%s' not found in extracted data (trusting AI)", field.name)
+            continue
+        
+        # Key exists - get the value
+        value = normalized_data[norm_field_name]
         
         # Debug logging for each field
         logger.info(
@@ -269,7 +275,7 @@ def validate_extracted_data(
         )
         
         # Step 5: Only warn if value is explicitly None or "" (empty string)
-        # Do NOT warn for missing keys - they affect completeness, not validation
+        # Trust the AI: if key is missing, don't warn
         if value is None or value == "":
             if field.required:
                 warnings_set.add(f"Required field '{field.name}' has empty value")
@@ -286,19 +292,29 @@ def validate_extracted_data(
                 )
                 result.validated_data[field.name] = [] if value is None else [value]
             else:
-                # Array is valid - keep as-is (no validation of nested items)
-                result.validated_data[field.name] = value
-                logger.debug("Validated array field '%s' with %d items", field.name, len(value))
+                # Filter out None/null items from arrays (fix "List Stutter")
+                filtered_array = [x for x in value if x is not None]
+                result.validated_data[field.name] = filtered_array
+                if len(filtered_array) < len(value):
+                    logger.debug(
+                        "Filtered %d null items from array field '%s' (%d -> %d items)",
+                        len(value) - len(filtered_array),
+                        field.name,
+                        len(value),
+                        len(filtered_array),
+                    )
+                else:
+                    logger.debug("Validated array field '%s' with %d items", field.name, len(filtered_array))
             continue
 
         elif field.type == FieldType.DATE:
+            # Try to parse, but don't warn on failure - prefer raw data over no data
             parsed = parse_date(value)
-            if parsed is None:
-                warnings_set.add(
-                    f"Field '{field.name}' has invalid date format: '{value}'. Expected YYYY-MM-DD."
-                )
-            else:
+            if parsed is not None:
                 result.validated_data[field.name] = parsed
+            else:
+                # Keep the original value even if parsing failed (relaxed validation)
+                result.validated_data[field.name] = value
 
         elif field.type == FieldType.CURRENCY:
             parsed = parse_currency(value)
@@ -367,6 +383,31 @@ def validate_extracted_data(
     result.warnings = list(warnings_set)
 
     return result
+
+
+def _clean_null_from_arrays(data: dict[str, Any] | list[Any] | Any) -> dict[str, Any] | list[Any] | Any:
+    """
+    Recursively clean None/null values from arrays in extracted data.
+    
+    Fixes "List Stutter" where arrays start with null (e.g., [null, {...}]).
+    
+    Args:
+        data: The data structure to clean (dict, list, or scalar).
+        
+    Returns:
+        Cleaned data structure with nulls removed from arrays.
+    """
+    if isinstance(data, dict):
+        # Recursively clean all values in the dict
+        return {k: _clean_null_from_arrays(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        # Filter out None/null items from arrays
+        filtered = [item for item in data if item is not None]
+        # Recursively clean remaining items
+        return [_clean_null_from_arrays(item) for item in filtered]
+    else:
+        # Scalar value - return as-is
+        return data
 
 
 def _evaluate_validation_rule_simpleeval(
@@ -1050,9 +1091,22 @@ Return data in the EXACT JSON format specified in the user prompt."""
         # For extraction, we want ALL pages if <= 10, otherwise chunk
         if total_pages <= 10:
             # Process all pages in a single request
-            return await self._extract_from_images(images, schema, source_file)
+            raw_result = await self._extract_from_images(images, schema, source_file)
+            
+            # Validate ONCE after extraction (post-merge equivalent for single request)
+            validation = validate_extracted_data(raw_result.extracted_data, schema)
+            
+            return ExtractionResult(
+                source_file=raw_result.source_file,
+                detected_schema=raw_result.detected_schema,
+                extracted_data=validation.validated_data,
+                confidence=raw_result.confidence,
+                warnings=validation.warnings,
+                field_confidences=raw_result.field_confidences,
+            )
         else:
             # Process in chunks of 5 pages, then merge results
+            # Validation happens in _merge_extraction_results (post-merge)
             logger.info("Large document (%d pages): processing in chunks of 5", total_pages)
             return await self._extract_from_images_chunked(images, schema, source_file)
 
@@ -1127,29 +1181,26 @@ Return data in the EXACT JSON format specified in the user prompt."""
                 field_confidences = {}
                 logger.info("Using legacy extraction format (no per-field confidences)")
 
-            # Calculate global confidence as average of ONLY non-null extracted fields
-            # Missing fields should NOT drag down confidence - they affect completeness (warnings), not confidence
+            # Calculate global confidence as average of valid confidence scores (> 0)
+            # This ensures the score reflects the *quality* of what was found, not the quantity
             if field_confidences:
-                # Only include confidences for fields that actually have non-null values
-                present_field_confidences = []
-                for field_name, conf in field_confidences.items():
-                    # Check if field has a non-null value in extracted_data
-                    field_value = extracted_data.get(field_name)
-                    if field_value is not None and field_value != "":
-                        if isinstance(conf, (int, float)) and 0 <= conf <= 1:
-                            present_field_confidences.append(conf)
+                # Filter out 0.0 scores - only include scores > 0
+                valid_scores = [
+                    score for score in field_confidences.values()
+                    if isinstance(score, (int, float)) and score > 0
+                ]
                 
-                if present_field_confidences:
-                    confidence = sum(present_field_confidences) / len(present_field_confidences)
+                if valid_scores:
+                    confidence = sum(valid_scores) / len(valid_scores)
                     logger.info(
-                        "Global confidence: %.3f (from %d non-null fields, avg of present fields)",
+                        "Global confidence: %.3f (from %d valid scores > 0, avg of quality scores)",
                         confidence,
-                        len(present_field_confidences),
+                        len(valid_scores),
                     )
                 else:
-                    # No fields found - return 0.0
+                    # No valid scores found - return 0.0
                     confidence = 0.0
-                    logger.warning("No non-null fields found, confidence set to 0.0")
+                    logger.warning("No valid confidence scores > 0 found, confidence set to 0.0")
             else:
                 # Fallback: calculate from logprobs if field confidences not available
                 logprobs_data = None
@@ -1165,15 +1216,19 @@ Return data in the EXACT JSON format specified in the user prompt."""
                 sum(field_confidences.values()) / len(field_confidences) if field_confidences and len(field_confidences) > 0 else 0.0,
             )
 
-            # Validate and post-process
-            validation = validate_extracted_data(extracted_data, schema)
+            # Post-process: Clean nulls from arrays recursively (fix "List Stutter")
+            cleaned_data = _clean_null_from_arrays(extracted_data)
+            
+            # DO NOT validate here - validation happens post-merge to avoid false warnings
+            # Return raw extracted data (validation will happen after merging if chunked,
+            # or in extract_data for single requests)
 
             return ExtractionResult(
                 source_file=source_file,
                 detected_schema=schema,
-                extracted_data=validation.validated_data,
+                extracted_data=cleaned_data,  # Return cleaned but unvalidated data
                 confidence=confidence,
-                warnings=validation.warnings,
+                warnings=[],  # No warnings yet - validation happens post-merge
                 field_confidences=field_confidences,
             )
 
@@ -1228,7 +1283,6 @@ Return data in the EXACT JSON format specified in the user prompt."""
         # Start with first result
         merged_data = results[0].extracted_data.copy()
         merged_field_confidences: dict[str, list[float]] = {}
-        all_warnings: list[str] = []
         all_confidences: list[float] = []
         
         # Initialize field confidences from first result
@@ -1236,12 +1290,14 @@ Return data in the EXACT JSON format specified in the user prompt."""
             merged_field_confidences[field_name] = [conf]
         
         all_confidences.append(results[0].confidence)
-        all_warnings.extend(results[0].warnings)
+        # Do NOT include warnings from individual chunks - they may be false positives
+        # Warnings will be generated post-merge based on the final merged data
         
         # Merge subsequent results
         for result in results[1:]:
             all_confidences.append(result.confidence)
-            all_warnings.extend(result.warnings)
+            # Do NOT include warnings from individual chunks - they may be false positives
+            # Warnings will be generated post-merge based on the final merged data
             
             # Merge field confidences
             for field_name, conf in result.field_confidences.items():
@@ -1281,11 +1337,16 @@ Return data in the EXACT JSON format specified in the user prompt."""
         # Calculate overall confidence as average
         overall_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0.0
         
-        # Validate merged data
-        validation = validate_extracted_data(merged_data, schema)
+        # Post-process: Clean nulls from arrays in merged data
+        cleaned_merged_data = _clean_null_from_arrays(merged_data)
         
-        # Deduplicate warnings
-        unique_warnings = list(set(all_warnings + validation.warnings))
+        # CRITICAL: Validate ONCE on the final merged data (post-merge)
+        # This prevents false warnings from individual chunks that are missing fields
+        # that appear in other chunks
+        validation = validate_extracted_data(cleaned_merged_data, schema)
+        
+        # Use only the warnings from post-merge validation (ignore chunk warnings)
+        unique_warnings = list(set(validation.warnings))
         
         logger.info(
             "Merged %d extraction results: %d fields, confidence=%.3f",
