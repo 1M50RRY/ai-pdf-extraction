@@ -8,6 +8,7 @@ import {
   Zap,
   AlertCircle,
   History,
+  Home,
 } from "lucide-react";
 import {
   UploadZone,
@@ -209,6 +210,7 @@ export default function App() {
 
   // Reset to start
   const resetToStart = () => {
+    setShowHistoryPage(false); // Close history page if open
     setCurrentStep("upload");
     setSchema(null);
     setSchemaId(null);
@@ -257,10 +259,21 @@ export default function App() {
               </div>
             </div>
 
-            {/* History Button & Backend Status */}
+            {/* Navigation & Backend Status */}
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setShowHistoryPage(true)}
+                onClick={resetToStart}
+                className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <Home className="w-4 h-4" />
+                <span className="text-sm">Home</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowHistoryPage(true);
+                  // Reset current step to avoid conflicts
+                  setCurrentStep("upload");
+                }}
                 className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <History className="w-4 h-4" />
@@ -480,6 +493,7 @@ export default function App() {
           }}
           schema={schema}
           pdfFile={selectedPdfFile}
+          documentId={selectedResult.document_id} // For API-based PDF preview
           onClose={handleCloseModal}
         />
       )}

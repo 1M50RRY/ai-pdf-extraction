@@ -211,6 +211,13 @@ export async function getBatchResults(batchId: string): Promise<ExtractBatchResp
 }
 
 /**
+ * Get document PDF content for preview
+ */
+export function getDocumentContentUrl(documentId: string): string {
+  return `${API_BASE}/documents/${documentId}/content`;
+}
+
+/**
  * Poll for batch completion
  */
 export async function pollBatchUntilComplete(

@@ -410,7 +410,7 @@ export function SmartCell({
         }
       }}
     >
-      <span className={`text-sm ${textClass} truncate flex-1`}>
+      <span className={`text-sm ${textClass} flex-1 whitespace-nowrap overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.2)]`}>
         {displayValue}
       </span>
       {confidence !== undefined && (

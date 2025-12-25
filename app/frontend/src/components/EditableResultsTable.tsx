@@ -20,7 +20,7 @@ import {
   Info,
   Loader2,
 } from "lucide-react";
-import { updateExtraction, approveBatch } from "../api";
+import { updateExtraction, approveBatch, getBatchStatus } from "../api";
 import type { SchemaDefinition } from "../types";
 import { SmartCell } from "./SmartCell";
 
@@ -133,31 +133,55 @@ export function EditableResultsTable({
       try {
         // Call API to persist the change - MUST await
         await updateExtraction(extractionId, { [fieldName]: value });
-        console.log("API update successful, updating local state");
+        console.log("API update successful, refetching from server to verify persistence");
 
-        // Update local state IMMEDIATELY after successful API call
-        setLocalResults((prev) => {
-          const updated = prev.map((r) => {
-            if (r.id === extractionId) {
-              const updatedResult = {
-                ...r,
-                extracted_data: { ...r.extracted_data, [fieldName]: value },
-                is_reviewed: true,
-                manual_overrides: {
-                  ...(r.manual_overrides || {}),
-                  [fieldName]: { old: r.extracted_data[fieldName], new: value },
-                },
-              };
-              console.log("Updated result:", updatedResult);
-              return updatedResult;
-            }
-            return r;
+        // Refetch batch status from server to prove persistence
+        try {
+          const batchStatus = await getBatchStatus(batchId);
+          const updatedDoc = batchStatus.documents.find(
+            (d) => d.extraction_id === extractionId
+          );
+          if (updatedDoc) {
+            // Update local state with server data
+            setLocalResults((prev) => {
+              const updated = prev.map((r) => {
+                if (r.id === extractionId) {
+                  return {
+                    ...r,
+                    extracted_data: updatedDoc.extracted_data || r.extracted_data,
+                    is_reviewed: updatedDoc.is_reviewed || false,
+                    field_confidences: updatedDoc.field_confidences || r.field_confidences,
+                  };
+                }
+                return r;
+              });
+              onDataUpdate?.(updated);
+              return updated;
+            });
+            console.log("Refetched from server - persistence verified");
+          }
+        } catch (refetchErr) {
+          console.warn("Refetch failed, using local update:", refetchErr);
+          // Fallback to local update if refetch fails
+          setLocalResults((prev) => {
+            const updated = prev.map((r) => {
+              if (r.id === extractionId) {
+                return {
+                  ...r,
+                  extracted_data: { ...r.extracted_data, [fieldName]: value },
+                  is_reviewed: true,
+                  manual_overrides: {
+                    ...(r.manual_overrides || {}),
+                    [fieldName]: { old: r.extracted_data[fieldName], new: value },
+                  },
+                };
+              }
+              return r;
+            });
+            onDataUpdate?.(updated);
+            return updated;
           });
-
-          // Notify parent component of the update
-          onDataUpdate?.(updated);
-          return updated;
-        });
+        }
       } catch (err) {
         console.error("Update failed:", err);
         throw err; // Re-throw to let SmartCell handle the error

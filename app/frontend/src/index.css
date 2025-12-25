@@ -29,6 +29,25 @@ body {
   background: var(--color-bg-card);
 }
 
+/* Thin scrollbar utility classes */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thumb-slate-600::-webkit-scrollbar-thumb {
+  background-color: #475569;
+  border-radius: 2px;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 4px;

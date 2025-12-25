@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { getBatchHistory, getBatchStatus, getSchema, type BatchSummary } from "../api";
 import { EditableResultsTable, type EditableExtractionResult } from "./EditableResultsTable";
+import { ValidationModal } from "./ValidationModal";
 import type { SchemaDefinition } from "../types";
 
 interface HistoryPageProps {
@@ -84,6 +85,9 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
   const [selectedSchema, setSelectedSchema] = useState<SchemaDefinition | null>(null);
   const [selectedResults, setSelectedResults] = useState<EditableExtractionResult[]>([]);
   const [loadingBatch, setLoadingBatch] = useState(false);
+  
+  // Validation modal state
+  const [selectedResult, setSelectedResult] = useState<EditableExtractionResult | null>(null);
 
   useEffect(() => {
     fetchHistory();
@@ -217,6 +221,7 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
             results={selectedResults}
             schema={selectedSchema}
             batchId={selectedBatch.id}
+            onRowClick={setSelectedResult}
           />
         ) : selectedResults.length > 0 ? (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
@@ -241,6 +246,23 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
           <div className="text-center py-8 text-slate-400">
             No extraction results available for this batch.
           </div>
+        )}
+        
+        {/* Validation Modal */}
+        {selectedResult && selectedSchema && (
+          <ValidationModal
+            result={{
+              source_file: selectedResult.source_file,
+              detected_schema: selectedSchema,
+              extracted_data: selectedResult.extracted_data,
+              confidence: selectedResult.confidence,
+              warnings: selectedResult.warnings,
+              field_confidences: selectedResult.field_confidences || undefined,
+            }}
+            schema={selectedSchema}
+            documentId={selectedResult.document_id} // Use API endpoint for PDF preview
+            onClose={() => setSelectedResult(null)}
+          />
         )}
       </div>
     );

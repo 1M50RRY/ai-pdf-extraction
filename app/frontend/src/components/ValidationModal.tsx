@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ExtractionResult, SchemaDefinition } from "../types";
 import { SmartCell } from "./SmartCell";
+import { getDocumentContentUrl } from "../api";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -21,6 +22,7 @@ interface ValidationModalProps {
   result: ExtractionResult;
   schema: SchemaDefinition;
   pdfFile?: File;
+  documentId?: string; // For fetching PDF from API when local file is missing
   onClose: () => void;
 }
 
@@ -50,6 +52,7 @@ export function ValidationModal({
   result,
   schema,
   pdfFile,
+  documentId,
   onClose,
 }: ValidationModalProps) {
   const [numPages, setNumPages] = useState<number>(0);
@@ -58,14 +61,17 @@ export function ValidationModal({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"formatted" | "json">("formatted");
 
-  // Create object URL for PDF
+  // Create object URL for PDF or use API URL
   useEffect(() => {
     if (pdfFile) {
       const url = URL.createObjectURL(pdfFile);
       setPdfUrl(url);
       return () => URL.revokeObjectURL(url);
+    } else if (documentId) {
+      // Use API endpoint for PDF content (e.g., from history)
+      setPdfUrl(getDocumentContentUrl(documentId));
     }
-  }, [pdfFile]);
+  }, [pdfFile, documentId]);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -214,22 +220,20 @@ export function ValidationModal({
             <div className="flex border-b border-slate-700">
               <button
                 onClick={() => setActiveTab("formatted")}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-                  activeTab === "formatted"
-                    ? "text-indigo-400 border-b-2 border-indigo-400"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === "formatted"
+                  ? "text-indigo-400 border-b-2 border-indigo-400"
+                  : "text-slate-400 hover:text-slate-200"
+                  }`}
               >
                 <FileText className="w-4 h-4" />
                 Formatted View
               </button>
               <button
                 onClick={() => setActiveTab("json")}
-                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
-                  activeTab === "json"
-                    ? "text-indigo-400 border-b-2 border-indigo-400"
-                    : "text-slate-400 hover:text-slate-200"
-                }`}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === "json"
+                  ? "text-indigo-400 border-b-2 border-indigo-400"
+                  : "text-slate-400 hover:text-slate-200"
+                  }`}
               >
                 <Code className="w-4 h-4" />
                 Raw JSON
@@ -261,15 +265,14 @@ export function ValidationModal({
                             )}
                           </div>
                           <span
-                            className={`text-xs px-2 py-0.5 rounded ${
-                              field.type === "currency"
-                                ? "bg-emerald-500/20 text-emerald-300"
-                                : field.type === "date"
-                                  ? "bg-purple-500/20 text-purple-300"
-                                  : field.type === "array"
+                            className={`text-xs px-2 py-0.5 rounded ${field.type === "currency"
+                              ? "bg-emerald-500/20 text-emerald-300"
+                              : field.type === "date"
+                                ? "bg-purple-500/20 text-purple-300"
+                                : field.type === "array"
                                   ? "bg-indigo-500/20 text-indigo-300"
                                   : "bg-slate-600/50 text-slate-400"
-                            }`}
+                              }`}
                           >
                             {field.type}
                           </span>
