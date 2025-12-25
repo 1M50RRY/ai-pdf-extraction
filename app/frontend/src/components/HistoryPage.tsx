@@ -110,6 +110,7 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
     try {
       // Get batch status with full document data
       const batchStatus = await getBatchStatus(batch.id);
+      console.log("Batch status response:", batchStatus);
       
       // Load schema if available
       let schema: SchemaDefinition | null = null;
@@ -117,8 +118,30 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
         try {
           const savedSchema = await getSchema(batch.schema_id);
           schema = savedSchema.structure;
+          console.log("Loaded schema:", schema);
         } catch (schemaErr) {
           console.warn("Could not load schema:", schemaErr);
+        }
+      }
+
+      // If no schema from DB, try to infer from extracted data
+      if (!schema && batchStatus.documents.length > 0) {
+        const firstDoc = batchStatus.documents.find(d => d.extracted_data && Object.keys(d.extracted_data).length > 0);
+        if (firstDoc?.extracted_data) {
+          // Create a minimal schema from the data keys
+          schema = {
+            name: batch.schema_name || "Inferred Schema",
+            description: "Schema inferred from extraction data",
+            version: "1.0",
+            fields: Object.keys(firstDoc.extracted_data).map(key => ({
+              name: key,
+              type: "string" as const,
+              description: "",
+              required: false,
+            })),
+            validation_rules: [],
+          };
+          console.log("Inferred schema from data:", schema);
         }
       }
 
@@ -138,6 +161,8 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
           manual_overrides: null,
         }));
 
+      console.log("Editable results:", editableResults);
+
       setSelectedBatch(batch);
       setSelectedSchema(schema);
       setSelectedResults(editableResults);
@@ -156,7 +181,7 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
   };
 
   // If viewing a specific batch
-  if (selectedBatch && selectedSchema) {
+  if (selectedBatch) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -187,11 +212,36 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
           </p>
         </div>
 
-        <EditableResultsTable
-          results={selectedResults}
-          schema={selectedSchema}
-          batchId={selectedBatch.id}
-        />
+        {selectedSchema ? (
+          <EditableResultsTable
+            results={selectedResults}
+            schema={selectedSchema}
+            batchId={selectedBatch.id}
+          />
+        ) : selectedResults.length > 0 ? (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+            <p className="text-amber-300 text-sm">
+              Schema could not be loaded. Showing raw extraction data:
+            </p>
+            <div className="mt-4 space-y-4">
+              {selectedResults.map((result) => (
+                <div key={result.id} className="bg-slate-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-slate-500" />
+                    <span className="font-mono text-sm text-slate-300">{result.source_file}</span>
+                  </div>
+                  <pre className="text-xs text-slate-400 overflow-x-auto">
+                    {JSON.stringify(result.extracted_data, null, 2)}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-slate-400">
+            No extraction results available for this batch.
+          </div>
+        )}
       </div>
     );
   }
