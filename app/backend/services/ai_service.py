@@ -1181,26 +1181,26 @@ Return data in the EXACT JSON format specified in the user prompt."""
                 field_confidences = {}
                 logger.info("Using legacy extraction format (no per-field confidences)")
 
-            # Calculate global confidence as average of valid confidence scores (> 0)
-            # This ensures the score reflects the *quality* of what was found, not the quantity
+            # Calculate global confidence using strict math: average of all non-None field confidences
+            # Round to 3 decimal places for consistency
             if field_confidences:
-                # Filter out 0.0 scores - only include scores > 0
-                valid_scores = [
-                    score for score in field_confidences.values()
-                    if isinstance(score, (int, float)) and score > 0
+                # Get all non-None field scores
+                field_scores = [
+                    v for k, v in field_confidences.items()
+                    if v is not None
                 ]
                 
-                if valid_scores:
-                    confidence = sum(valid_scores) / len(valid_scores)
+                if field_scores:
+                    confidence = round(sum(field_scores) / len(field_scores), 3)
                     logger.info(
-                        "Global confidence: %.3f (from %d valid scores > 0, avg of quality scores)",
+                        "Global confidence: %.3f (from %d field scores, strict average)",
                         confidence,
-                        len(valid_scores),
+                        len(field_scores),
                     )
                 else:
                     # No valid scores found - return 0.0
                     confidence = 0.0
-                    logger.warning("No valid confidence scores > 0 found, confidence set to 0.0")
+                    logger.warning("No valid field confidence scores found, confidence set to 0.0")
             else:
                 # Fallback: calculate from logprobs if field confidences not available
                 logprobs_data = None
@@ -1334,8 +1334,11 @@ Return data in the EXACT JSON format specified in the user prompt."""
             if valid_confs:
                 final_field_confidences[field_name] = sum(valid_confs) / len(valid_confs)
         
-        # Calculate overall confidence as average
-        overall_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0.0
+        # Calculate overall confidence as average (rounded to 3 decimal places)
+        overall_confidence = round(
+            sum(all_confidences) / len(all_confidences) if all_confidences else 0.0,
+            3
+        )
         
         # Post-process: Clean nulls from arrays in merged data
         cleaned_merged_data = _clean_null_from_arrays(merged_data)
@@ -1436,6 +1439,91 @@ Example response structure:
 }}
 
 Field names to extract: {json.dumps(field_names)}"""
+
+    async def repair_data_with_llm(
+        self,
+        extracted_data: dict[str, Any],
+        schema: SchemaDefinition | None = None,
+    ) -> dict[str, Any]:
+        """
+        Use LLM to intelligently repair extracted data.
+        
+        Fixes:
+        - Missing calculated values (Tax = Total - Subtotal, Due Date from Issue Date + terms)
+        - OCR typos (l -> 1, O -> 0)
+        - Math validation (qty * price vs total)
+        - Format consistency (dates to YYYY-MM-DD, money to numeric)
+        
+        Args:
+            extracted_data: The extracted data dictionary to repair.
+            schema: Optional schema definition for context (not currently used but available).
+            
+        Returns:
+            Repaired data dictionary.
+        
+        Raises:
+            AIServiceError: If the repair operation fails.
+        """
+        if self.use_mock:
+            logger.info("Repairing data (MOCK MODE) - returning original data")
+            return extracted_data
+        
+        REPAIR_SYSTEM_PROMPT = """You are a Forensic Accountant and Data Integrity Specialist.
+
+Your Goal: Review the provided JSON data for logical inconsistencies, missing calculations, and obvious OCR errors.
+
+**Rules:**
+
+1. **Derive Missing Values:** If 'Tax' is null but you see 'Subtotal' and 'Total', calculate the Tax. If 'Due Date' is null but the text said 'Net 30' and you have an 'Issue Date', calculate the Due Date.
+
+2. **Fix OCR Typos:** If a numeric field contains 'l' or 'O' instead of '1' or '0', fix it.
+
+3. **Validate Math:** Check line items. If `qty * price` does not equal `total` due to a slight OCR error (e.g. 100.00 vs 100.01), trust the explicitly printed Total unless it's wildly off.
+
+4. **Format Consistency:** Ensure all dates are YYYY-MM-DD and money is strictly numeric (no symbols).
+
+**Return:** The purely repaired JSON object. No markdown, no explanations."""
+
+        try:
+            # Convert extracted_data to JSON string
+            json_data = json.dumps(extracted_data, indent=2)
+            
+            user_prompt = f"Here is the current extracted data: {json_data}. Repair it."
+            
+            logger.info("Calling LLM to repair extracted data")
+            
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": REPAIR_SYSTEM_PROMPT},
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format={"type": "json_object"},
+                # No max_tokens limit - let the model use its full capacity
+            )
+            
+            content = response.choices[0].message.content
+            if not content:
+                raise AIServiceError("Empty response from OpenAI repair endpoint")
+            
+            try:
+                repaired_data = json.loads(content)
+            except json.JSONDecodeError as e:
+                logger.error("Failed to parse repair response: %s", content[:500])
+                raise AIServiceError(f"Invalid JSON in repair response: {e}") from e
+            
+            logger.info(
+                "Successfully repaired data: %d fields",
+                len(repaired_data),
+            )
+            
+            return repaired_data
+            
+        except AIServiceError:
+            raise
+        except Exception as e:
+            logger.exception("Data repair failed")
+            raise AIServiceError(f"Data repair failed: {e}") from e
 
     # =========================================================================
     # Legacy method for backwards compatibility
