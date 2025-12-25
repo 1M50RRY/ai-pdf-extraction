@@ -2,6 +2,7 @@
 
 export type FieldType =
   | "string"
+  | "array"
   | "currency"
   | "date"
   | "number"

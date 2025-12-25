@@ -8,4 +8,5 @@ export { EditableResultsTable } from "./EditableResultsTable";
 export type { EditableExtractionResult } from "./EditableResultsTable";
 export { HistoryModal } from "./HistoryModal";
 export { HistoryPage } from "./HistoryPage";
+export { SmartCell } from "./SmartCell";
 

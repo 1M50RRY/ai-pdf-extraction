@@ -12,6 +12,7 @@ import {
   Code,
 } from "lucide-react";
 import type { ExtractionResult, SchemaDefinition } from "../types";
+import { SmartCell } from "./SmartCell";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -242,6 +243,14 @@ export function ValidationModal({
                   {schema.fields.map((field) => {
                     const value = result.extracted_data[field.name];
                     const hasValue = value !== null && value !== undefined && value !== "";
+                    // Get field confidence if available (from field_confidences in result)
+                    const fieldConfidence =
+                      "field_confidences" in result &&
+                      result.field_confidences &&
+                      typeof result.field_confidences === "object" &&
+                      field.name in result.field_confidences
+                        ? (result.field_confidences as Record<string, number>)[field.name]
+                        : undefined;
 
                     return (
                       <div
@@ -263,18 +272,24 @@ export function ValidationModal({
                                 ? "bg-emerald-500/20 text-emerald-300"
                                 : field.type === "date"
                                   ? "bg-purple-500/20 text-purple-300"
+                                  : field.type === "array"
+                                  ? "bg-indigo-500/20 text-indigo-300"
                                   : "bg-slate-600/50 text-slate-400"
                             }`}
                           >
                             {field.type}
                           </span>
                         </div>
-                        <div
-                          className={`text-lg font-mono ${
-                            hasValue ? "text-slate-100" : "text-slate-500 italic"
-                          }`}
-                        >
-                          {hasValue ? String(value) : "—"}
+                        <div className="mt-2">
+                          {hasValue ? (
+                            <SmartCell
+                              value={value}
+                              confidence={fieldConfidence}
+                              fieldName={field.name}
+                            />
+                          ) : (
+                            <span className="text-slate-500 italic">—</span>
+                          )}
                         </div>
                         {field.description && (
                           <p className="text-xs text-slate-500 mt-2">

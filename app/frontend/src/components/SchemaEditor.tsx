@@ -16,6 +16,7 @@ import type { FieldDefinition, FieldType, SchemaDefinition } from "../types";
 
 const FIELD_TYPES: FieldType[] = [
   "string",
+  "array",
   "currency",
   "date",
   "number",
@@ -28,6 +29,7 @@ const FIELD_TYPES: FieldType[] = [
 
 const TYPE_COLORS: Record<FieldType, string> = {
   string: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  array: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
   currency: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
   date: "bg-purple-500/20 text-purple-300 border-purple-500/30",
   number: "bg-amber-500/20 text-amber-300 border-amber-500/30",

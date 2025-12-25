@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { updateExtraction, approveBatch } from "../api";
 import type { SchemaDefinition } from "../types";
+import { SmartCell } from "./SmartCell";
 
 // Extended extraction result with editing metadata
 export interface EditableExtractionResult {
@@ -173,7 +174,7 @@ function EditableCell({
   const handleBlur = async () => {
     // Parse the value appropriately
     let parsedValue: unknown = editValue;
-    
+
     // Try to parse as JSON if it looks like JSON
     if (editValue.trim().startsWith("{") || editValue.trim().startsWith("[")) {
       try {
@@ -188,7 +189,7 @@ function EditableCell({
     const currentValueStr = Array.isArray(value)
       ? JSON.stringify(value)
       : String(value ?? "");
-    
+
     if (editValue !== currentValueStr) {
       setIsSaving(true);
       try {
@@ -291,7 +292,7 @@ function EditableCell({
         </span>
         <Edit3 className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       </div>
-      
+
       {/* Confidence tooltip indicator */}
       {confidence < 0.8 && (
         <span className="absolute top-0 right-0 text-xs text-slate-500 opacity-0 group-hover:opacity-100">
@@ -323,7 +324,7 @@ export function EditableResultsTable({
   const handleCellUpdate = useCallback(
     async (extractionId: string, fieldName: string, value: unknown) => {
       console.log("handleCellUpdate called:", { extractionId, fieldName, value });
-      
+
       try {
         // Call API to persist the change
         await updateExtraction(extractionId, { [fieldName]: value });
@@ -347,7 +348,7 @@ export function EditableResultsTable({
             }
             return r;
           });
-          
+
           // Notify parent component of the update
           onDataUpdate?.(updated);
           return updated;
@@ -444,7 +445,7 @@ export function EditableResultsTable({
         cell: (info) => {
           const value = info.getValue();
           const row = info.row.original;
-          
+
           // Debug logging
           console.log("Row Data:", {
             id: row.id,
@@ -453,10 +454,29 @@ export function EditableResultsTable({
             field_confidences: row.field_confidences,
             confidence: row.confidence,
           });
-          
+
           const hasOverride = row.manual_overrides?.[field.name] !== undefined;
           // Use per-field confidence if available, else fall back to global
           const fieldConfidence = row.field_confidences?.[field.name] ?? row.confidence;
+
+          // For arrays, use SmartCell for display (non-editable for now)
+          if (Array.isArray(value)) {
+            return (
+              <div className="relative">
+                <SmartCell
+                  value={value}
+                  confidence={fieldConfidence}
+                  fieldName={field.name}
+                />
+                {hasOverride && (
+                  <div
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10"
+                    title="Manually edited"
+                  />
+                )}
+              </div>
+            );
+          }
 
           return (
             <EditableCell
@@ -484,20 +504,59 @@ export function EditableResultsTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // Helper to format cell value for CSV (handles arrays)
+  const formatCellForCSV = (value: unknown): string => {
+    if (value === null || value === undefined) {
+      return "";
+    }
+    if (Array.isArray(value)) {
+      // Format array as readable string: "Item 1 | Item 2 | Item 3"
+      return value
+        .map((item) => {
+          if (typeof item === "object" && item !== null) {
+            // For objects, create a compact representation
+            return JSON.stringify(item).replace(/,/g, "; ");
+          }
+          return String(item);
+        })
+        .join(" | ");
+    }
+    if (typeof value === "object") {
+      // For non-array objects, stringify
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+
   const exportToCSV = () => {
-    const headers = ["source_file", "confidence", "warnings", "is_reviewed", ...schema.fields.map((f) => f.name)];
+    const headers = [
+      "source_file",
+      "confidence",
+      "warnings",
+      "is_reviewed",
+      ...schema.fields.map((f) => f.name),
+      ...schema.fields.map((f) => `${f.name}_confidence`), // Add confidence columns
+    ];
     const rows = localResults.map((result) => [
       result.source_file,
       result.confidence,
       result.warnings.join("; "),
       result.is_reviewed,
-      ...schema.fields.map((f) => result.extracted_data[f.name] ?? ""),
+      ...schema.fields.map((f) => formatCellForCSV(result.extracted_data[f.name])),
+      ...schema.fields.map((f) => {
+        const conf = result.field_confidences?.[f.name];
+        return conf !== undefined ? String(Math.round(conf * 100)) : "";
+      }),
     ]);
 
     const csv = [
       headers.join(","),
       ...rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row.map((cell) => {
+          const cellStr = String(cell);
+          // Escape quotes and wrap in quotes
+          return `"${cellStr.replace(/"/g, '""')}"`;
+        }).join(",")
       ),
     ].join("\n");
 
@@ -557,8 +616,8 @@ export function EditableResultsTable({
             <p className="text-sm text-slate-400">Reviewed</p>
             <p
               className={`text-2xl font-bold ${reviewedCount === localResults.length
-                  ? "text-emerald-400"
-                  : "text-amber-400"
+                ? "text-emerald-400"
+                : "text-amber-400"
                 }`}
             >
               {reviewedCount}/{localResults.length}
@@ -580,8 +639,8 @@ export function EditableResultsTable({
             onClick={handleApproveAll}
             disabled={isApproving || approvalStatus === "success"}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${approvalStatus === "success"
-                ? "bg-emerald-500/20 text-emerald-400 cursor-default"
-                : "bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-600"
+              ? "bg-emerald-500/20 text-emerald-400 cursor-default"
+              : "bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-600"
               }`}
           >
             {isApproving ? (
