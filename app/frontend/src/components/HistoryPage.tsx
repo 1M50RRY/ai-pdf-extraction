@@ -78,7 +78,7 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
   const [batches, setBatches] = useState<BatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Selected batch state
   const [selectedBatch, setSelectedBatch] = useState<BatchSummary | null>(null);
   const [selectedSchema, setSelectedSchema] = useState<SchemaDefinition | null>(null);
@@ -111,7 +111,7 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
       // Get batch status with full document data
       const batchStatus = await getBatchStatus(batch.id);
       console.log("Batch status response:", batchStatus);
-      
+
       // Load schema if available
       let schema: SchemaDefinition | null = null;
       if (batch.schema_id) {

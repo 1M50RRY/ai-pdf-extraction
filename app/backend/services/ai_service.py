@@ -685,7 +685,7 @@ Return data in the EXACT JSON format specified in the user prompt."""
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "gpt-5-mini",
+        model: str = "gpt-4.1",
         use_mock: bool = False,
     ):
         """
