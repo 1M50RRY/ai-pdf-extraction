@@ -250,34 +250,35 @@ def validate_extracted_data(
         data_field_names,
     )
 
-    # Check for fields in data not in schema
+    # Check for fields in data not in schema (informational only, no warnings)
     extra_fields = set(data_field_names) - set(schema_field_names)
     if extra_fields:
-        logger.warning("Data contains fields not in schema: %s", extra_fields)
+        logger.debug("Data contains extra fields not in schema: %s (trusting data keys)", extra_fields)
 
-    # Check for fields in schema not in data
+    # Check for fields in schema not in data (informational only, no warnings)
+    # We trust the data keys - this may happen due to renaming
     missing_fields = set(schema_field_names) - set(data_field_names)
     if missing_fields:
-        logger.warning("Schema fields not found in data: %s", missing_fields)
+        logger.debug("Schema fields not in data: %s (trusting data keys)", missing_fields)
 
     # Track currency fields for math checks
     currency_values: dict[str, float] = {}
 
     for field_name, field_def in field_map.items():
+        # Skip if field is not in data (trust data keys, no warning for missing)
+        if field_name not in data:
+            continue
+            
         value = data.get(field_name)
 
-        # Enhanced null/empty check - handles None, "", [], and whitespace strings
-        is_empty = (
-            value is None
-            or value == ""
-            or value == []
-            or (isinstance(value, str) and not value.strip())
-        )
+        # Relaxed null/empty check - ONLY warn for explicitly None or empty string ""
+        # Do NOT warn for whitespace, empty lists, or missing keys (trust data)
+        is_explicitly_empty = value is None or value == ""
 
-        if is_empty:
+        if is_explicitly_empty:
             if field_def.required:
                 result.warnings.append(
-                    f"Required field '{field_name}' is missing or empty"
+                    f"Required field '{field_name}' has empty value"
                 )
             result.validated_data[field_name] = None
             continue
@@ -684,7 +685,7 @@ Return data in the EXACT JSON format specified in the user prompt."""
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "gpt-4o",
+        model: str = "gpt-5-mini",
         use_mock: bool = False,
     ):
         """

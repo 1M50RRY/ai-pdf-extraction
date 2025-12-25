@@ -40,6 +40,7 @@ try:
     from .models import (
         ApproveExtractionRequest,
         ApproveExtractionResponse,
+        BatchExtractionSummary,
         BatchHistoryResponse,
         BatchStatusResponse,
         BatchSummary,
@@ -69,6 +70,7 @@ except ImportError:
     from models import (
         ApproveExtractionRequest,
         ApproveExtractionResponse,
+        BatchExtractionSummary,
         BatchHistoryResponse,
         BatchStatusResponse,
         BatchSummary,
@@ -1010,10 +1012,12 @@ async def get_batch_history(
     for batch in batches:
         # Get schema name if available
         schema_name = None
+        schema_id_str = None
         if batch.schema_id:
             saved_schema = db.query(SavedSchema).filter(SavedSchema.id == batch.schema_id).first()
             if saved_schema:
                 schema_name = saved_schema.name
+            schema_id_str = str(batch.schema_id)
 
         # Determine status
         if batch.completed_at:
@@ -1028,16 +1032,42 @@ async def get_batch_history(
             )
             batch_status = "processing" if processing_count > 0 else "pending"
 
+        # Get full extraction data for each document
+        extractions = []
+        documents = db.query(Document).filter(Document.batch_id == batch.id).all()
+        for doc in documents:
+            # Get extraction for this document
+            extraction = (
+                db.query(Extraction)
+                .filter(Extraction.document_id == doc.id)
+                .first()
+            )
+            if extraction:
+                extractions.append(
+                    BatchExtractionSummary(
+                        id=str(extraction.id),
+                        document_id=str(doc.id),
+                        filename=doc.filename,
+                        extracted_data=extraction.data or {},
+                        confidence=extraction.confidence,
+                        field_confidences=extraction.field_confidences or {},
+                        warnings=extraction.warnings or [],
+                        is_reviewed=extraction.is_reviewed,
+                    )
+                )
+
         summaries.append(
             BatchSummary(
                 id=str(batch.id),
                 schema_name=schema_name,
+                schema_id=schema_id_str,
                 created_at=batch.created_at.isoformat(),
                 completed_at=batch.completed_at.isoformat() if batch.completed_at else None,
                 total_documents=batch.total_documents,
                 successful_documents=batch.successful_documents,
                 failed_documents=batch.failed_documents,
                 status=batch_status,
+                extractions=extractions,
             )
         )
 

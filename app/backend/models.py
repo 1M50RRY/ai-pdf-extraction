@@ -442,17 +442,38 @@ class ApproveExtractionResponse(BaseModel):
 # =============================================================================
 
 
+class BatchExtractionSummary(BaseModel):
+    """Extraction summary for history listing."""
+
+    id: str = Field(..., description="Extraction ID (UUID)")
+    document_id: str = Field(..., description="Document ID")
+    filename: str = Field(..., description="Original filename")
+    extracted_data: dict[str, Any] = Field(..., description="Extracted data fields")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score")
+    field_confidences: dict[str, float] = Field(
+        default_factory=dict,
+        description="Per-field confidence scores",
+    )
+    warnings: list[str] = Field(default_factory=list, description="Warnings")
+    is_reviewed: bool = Field(default=False, description="Whether reviewed")
+
+
 class BatchSummary(BaseModel):
     """Summary of a batch for history listing."""
 
     id: str = Field(..., description="Batch ID (UUID)")
     schema_name: str | None = Field(default=None, description="Schema name used")
+    schema_id: str | None = Field(default=None, description="Schema ID (UUID)")
     created_at: str = Field(..., description="Creation timestamp")
     completed_at: str | None = Field(default=None, description="Completion timestamp")
     total_documents: int = Field(..., ge=0, description="Total documents")
     successful_documents: int = Field(..., ge=0, description="Successful extractions")
     failed_documents: int = Field(..., ge=0, description="Failed extractions")
     status: str = Field(..., description="Overall status")
+    extractions: list[BatchExtractionSummary] = Field(
+        default_factory=list,
+        description="Full extraction data for each document (when available)",
+    )
 
 
 class BatchHistoryResponse(BaseModel):
