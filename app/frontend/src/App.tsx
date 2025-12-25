@@ -123,6 +123,10 @@ export default function App() {
       const response = await uploadSample(file);
       setSchema(response.suggested_schema);
       setSchemaId(null); // Clear any previously selected template
+      
+      // File Carry-Over: Automatically add the discovery file to batch files
+      setBatchFiles([file]);
+      
       setCurrentStep("schema");
     } catch (err) {
       console.error("Upload failed:", err);

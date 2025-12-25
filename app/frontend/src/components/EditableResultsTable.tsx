@@ -19,8 +19,9 @@ import {
   FileText,
   Info,
   Loader2,
+  Sparkles,
 } from "lucide-react";
-import { updateExtraction, approveBatch, getBatchStatus } from "../api";
+import { updateExtraction, approveBatch, getBatchStatus, autoCalculateDocument } from "../api";
 import type { SchemaDefinition } from "../types";
 import { SmartCell } from "./SmartCell";
 
@@ -119,6 +120,8 @@ export function EditableResultsTable({
   const [localResults, setLocalResults] = useState(results);
   const [isApproving, setIsApproving] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isAutoCalculating, setIsAutoCalculating] = useState(false);
+  const [calculatingDocumentIds, setCalculatingDocumentIds] = useState<Set<string>>(new Set());
 
   // Sync local state with incoming results prop (e.g., after refresh from backend)
   useEffect(() => {
@@ -189,6 +192,58 @@ export function EditableResultsTable({
     },
     [onDataUpdate]
   );
+
+  // Handle auto-calculate for all rows
+  const handleAutoCalculate = async () => {
+    setIsAutoCalculating(true);
+    const documentIds = localResults.map((r) => r.document_id);
+    setCalculatingDocumentIds(new Set(documentIds));
+
+    try {
+      // Process all documents in parallel
+      const promises = documentIds.map(async (docId) => {
+        try {
+          const updated = await autoCalculateDocument(docId);
+          return { docId, success: true, data: updated };
+        } catch (err) {
+          console.error(`Auto-calculate failed for document ${docId}:`, err);
+          return { docId, success: false, error: err };
+        }
+      });
+
+      await Promise.all(promises);
+
+      // Refetch batch status to get updated data
+      try {
+        const batchStatus = await getBatchStatus(batchId);
+
+        // Update local state with calculated values
+        const updatedResults = localResults.map((r) => {
+          const updatedDoc = batchStatus.documents.find(
+            (d) => d.extraction_id === r.id
+          );
+          if (updatedDoc && updatedDoc.extracted_data) {
+            return {
+              ...r,
+              extracted_data: updatedDoc.extracted_data,
+              field_confidences: updatedDoc.field_confidences || r.field_confidences,
+            };
+          }
+          return r;
+        });
+
+        setLocalResults(updatedResults);
+        onDataUpdate?.(updatedResults);
+      } catch (refetchErr) {
+        console.warn("Failed to refetch batch status after auto-calculate:", refetchErr);
+      }
+    } catch (err) {
+      console.error("Auto-calculate failed:", err);
+    } finally {
+      setIsAutoCalculating(false);
+      setCalculatingDocumentIds(new Set());
+    }
+  };
 
   // Handle approve all
   const handleApproveAll = async () => {
@@ -285,6 +340,14 @@ export function EditableResultsTable({
           });
 
           const hasOverride = row.manual_overrides?.[field.name] !== undefined;
+          const overrideData = row.manual_overrides?.[field.name];
+          const isAutoCalculated = Boolean(
+            overrideData &&
+            typeof overrideData === "object" &&
+            overrideData !== null &&
+            "auto_calculated" in overrideData
+          );
+          const isCalculating = calculatingDocumentIds.has(row.document_id);
           // Use per-field confidence if available, else fall back to global
           const fieldConfidence = row.field_confidences?.[field.name] ?? row.confidence;
 
@@ -292,19 +355,32 @@ export function EditableResultsTable({
           if (Array.isArray(value)) {
             return (
               <div className="relative">
-                <SmartCell
-                  value={value}
-                  confidence={fieldConfidence}
-                  fieldName={field.name}
-                  onSave={async (newValue) => {
-                    await handleCellUpdate(row.id, field.name, newValue);
-                  }}
-                  editable={true}
-                />
-                {hasOverride && (
+                <div className={isAutoCalculated ? "bg-blue-500/10 border border-blue-500/30 rounded px-1" : ""}>
+                  {isCalculating && (
+                    <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center z-10 rounded">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                    </div>
+                  )}
+                  <SmartCell
+                    value={value}
+                    confidence={fieldConfidence}
+                    fieldName={field.name}
+                    onSave={async (newValue) => {
+                      await handleCellUpdate(row.id, field.name, newValue);
+                    }}
+                    editable={true}
+                  />
+                </div>
+                {hasOverride && !isAutoCalculated && (
                   <div
                     className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10"
                     title="Manually edited"
+                  />
+                )}
+                {isAutoCalculated && (
+                  <div
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500 z-10"
+                    title="Auto-calculated"
                   />
                 )}
               </div>
@@ -314,19 +390,32 @@ export function EditableResultsTable({
           // Use SmartCell for scalar values too (with editing support)
           return (
             <div className="relative">
-              <SmartCell
-                value={value}
-                confidence={fieldConfidence}
-                fieldName={field.name}
-                onSave={async (newValue) => {
-                  await handleCellUpdate(row.id, field.name, newValue);
-                }}
-                editable={true}
-              />
-              {hasOverride && (
+              <div className={isAutoCalculated ? "bg-blue-500/10 border border-blue-500/30 rounded px-1" : ""}>
+                {isCalculating && (
+                  <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center z-10 rounded">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                  </div>
+                )}
+                <SmartCell
+                  value={value}
+                  confidence={fieldConfidence}
+                  fieldName={field.name}
+                  onSave={async (newValue) => {
+                    await handleCellUpdate(row.id, field.name, newValue);
+                  }}
+                  editable={true}
+                />
+              </div>
+              {hasOverride && !isAutoCalculated && (
                 <div
                   className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10"
                   title="Manually edited"
+                />
+              )}
+              {isAutoCalculated && (
+                <div
+                  className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500 z-10"
+                  title="Auto-calculated"
                 />
               )}
             </div>
@@ -336,7 +425,7 @@ export function EditableResultsTable({
     });
 
     return cols;
-  }, [schema.fields, handleCellUpdate, onRowClick]);
+  }, [schema.fields, handleCellUpdate, onRowClick, calculatingDocumentIds]);
 
   const table = useReactTable({
     data: localResults,
@@ -477,6 +566,21 @@ export function EditableResultsTable({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Auto-Calculate Button */}
+          <button
+            onClick={handleAutoCalculate}
+            disabled={isAutoCalculating}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors font-medium disabled:bg-slate-600 disabled:cursor-not-allowed"
+            title="Auto-fill missing calculated fields (Tax, Total, etc.)"
+          >
+            {isAutoCalculating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
+            🪄 Auto-Fill Missing Math
+          </button>
+
           {/* Approve All Button */}
           <button
             onClick={handleApproveAll}

@@ -304,6 +304,14 @@ export async function updateExtraction(
 }
 
 /**
+ * Auto-calculate missing fields using mathematical heuristics
+ */
+export async function autoCalculateDocument(documentId: string): Promise<ExtractionDetail> {
+  const response = await api.post<ExtractionDetail>(`/documents/${documentId}/auto-calculate`);
+  return response.data;
+}
+
+/**
  * Approve all extractions in a batch
  */
 export async function approveBatch(
