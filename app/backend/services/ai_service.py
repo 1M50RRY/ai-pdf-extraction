@@ -655,11 +655,18 @@ class AIService:
     DISCOVERY_SYSTEM_PROMPT = """You are a Senior Data Architect specializing in document digitization.
 Your goal is to analyze documents and design optimal database schemas for data extraction.
 
+## Important: Representative Sample Analysis
+You are analyzing a **representative sample** of pages from a document (Start, Middle, End).
+1. Look for Schema Definitions across ALL these pages.
+2. If you see a Data Table on a middle page, define a corresponding `Array` field.
+3. Do not assume the schema is limited to the cover page.
+4. Consider that important data structures (tables, lists) may appear in the middle sections.
+
 ## Your Analysis Process (Chain-of-Thought):
 
-1. **Visual Layout Analysis**: Examine the document's structure, headers, sections, tables, and formatting.
-2. **Document Classification**: Identify the document type based on visual and textual indicators.
-3. **Key Data Point Identification**: Identify ALL business-relevant data points found in the document. Do not limit the count.
+1. **Visual Layout Analysis**: Examine the document's structure, headers, sections, tables, and formatting across ALL provided pages.
+2. **Document Classification**: Identify the document type based on visual and textual indicators from all pages.
+3. **Key Data Point Identification**: Identify ALL business-relevant data points found across the document. Do not limit the count.
 4. **Numerical Relationship Detection**: Identify mathematical relationships between numeric fields.
 
 ## Field Naming Rules:
@@ -840,17 +847,17 @@ Return data in the EXACT JSON format specified in the user prompt."""
     # Task 1: Smart Schema Discovery
     # =========================================================================
 
-    async def discover_schema(self, image: Image.Image) -> SchemaDefinition:
+    async def discover_schema(self, images: list[Image.Image] | Image.Image) -> SchemaDefinition:
         """
-        Analyze a document image and discover an extraction schema.
+        Analyze document images and discover an extraction schema.
 
         Uses Chain-of-Thought prompting to:
         1. Classify the document type
-        2. Identify key data points
+        2. Identify key data points across all pages
         3. Generate a semantic schema
 
         Args:
-            image: PIL Image of the document page.
+            images: Single PIL Image or list of PIL Images (representative pages).
 
         Returns:
             SchemaDefinition based on AI analysis.
@@ -859,10 +866,48 @@ Return data in the EXACT JSON format specified in the user prompt."""
             logger.info("Discovering schema (MOCK MODE)")
             return self._get_mock_schema()
 
-        logger.info("Discovering schema using GPT-4.1 structured outputs")
-        base64_image = self._image_to_base64(image)
+        # Normalize to list
+        if isinstance(images, Image.Image):
+            images = [images]
+        
+        logger.info("Discovering schema using GPT-4.1 structured outputs (%d pages)", len(images))
+        
+        # Convert all images to base64
+        base64_images = [self._image_to_base64(img) for img in images]
 
         try:
+            # Build content with multiple images
+            content = [
+                {
+                    "type": "text",
+                    "text": (
+                        f"Analyze these {len(images)} representative pages from a document carefully.\n\n"
+                        "1. Examine the visual layout and text across ALL pages to classify the document type.\n"
+                        "2. Identify ALL business-relevant data points that should be extracted across all pages. "
+                        "Do not limit the count.\n"
+                        "3. **CRITICAL: If you detect a table or list of items on ANY page (e.g., invoice line items, transaction history), "
+                        "define it as a SINGLE field with type 'array'. Name it semantically (e.g., 'line_items'). "
+                        "In the description, explicitly list the columns to extract (e.g., 'List of items containing: description, quantity, unit_price, total').**\n"
+                        "4. Choose semantic field names in snake_case.\n"
+                        "5. If you detect numerical relationships at the document summary level (like totals summing up), "
+                        "output validation_rules using the exact field names you chose. "
+                        "Do NOT create rules for fields inside array fields.\n\n"
+                        "Remember: Important data structures may appear in the middle pages, not just the first page.\n\n"
+                        "Provide your analysis with reasoning."
+                    ),
+                },
+            ]
+            
+            # Add all images
+            for i, base64_img in enumerate(base64_images):
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{base64_img}",
+                        "detail": "high",
+                    },
+                })
+            
             # Use beta.chat.completions.parse for structured outputs
             response = self.client.beta.chat.completions.parse(
                 model=self.model,
@@ -870,32 +915,7 @@ Return data in the EXACT JSON format specified in the user prompt."""
                     {"role": "system", "content": self.DISCOVERY_SYSTEM_PROMPT},
                     {
                         "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": (
-                                    "Analyze this document image carefully.\n\n"
-                                    "1. Examine the visual layout and text to classify the document type.\n"
-                                    "2. Identify ALL business-relevant data points that should be extracted. "
-                                    "Do not limit the count.\n"
-                                    "3. **CRITICAL: If you detect a table or list of items (e.g., invoice line items, transaction history), "
-                                    "define it as a SINGLE field with type 'array'. Name it semantically (e.g., 'line_items'). "
-                                    "In the description, explicitly list the columns to extract (e.g., 'List of items containing: description, quantity, unit_price, total').**\n"
-                                    "4. Choose semantic field names in snake_case.\n"
-                                    "5. If you detect numerical relationships at the document summary level (like totals summing up), "
-                                    "output validation_rules using the exact field names you chose. "
-                                    "Do NOT create rules for fields inside array fields.\n\n"
-                                    "Provide your analysis with reasoning."
-                                ),
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{base64_image}",
-                                    "detail": "high",
-                                },
-                            },
-                        ],
+                        "content": content,
                     },
                 ],
                 response_format=DiscoveryResponse,
@@ -980,20 +1000,21 @@ Return data in the EXACT JSON format specified in the user prompt."""
 
     async def extract_data(
         self,
-        image: Image.Image,
+        images: list[Image.Image] | Image.Image,
         schema: SchemaDefinition,
         source_file: str,
     ) -> ExtractionResult:
         """
-        Extract data from a document image according to a schema.
+        Extract data from document images according to a schema.
 
         Uses:
         - Dynamic prompt construction based on schema
         - Logprobs for confidence scoring (geometric mean)
         - Post-processing validation
+        - Chunking for large documents (>10 pages)
 
         Args:
-            image: PIL Image of the document page.
+            images: Single PIL Image or list of PIL Images to extract from.
             schema: The schema defining what fields to extract.
             source_file: Original filename for the result.
 
@@ -1003,6 +1024,18 @@ Return data in the EXACT JSON format specified in the user prompt."""
         if self.use_mock:
             logger.info("Extracting data (MOCK MODE) for: %s", source_file)
             return self._get_mock_extraction(schema, source_file)
+
+        # Normalize to list
+        if isinstance(images, Image.Image):
+            images = [images]
+        
+        total_pages = len(images)
+        logger.info(
+            "Extracting data from %d page(s) for '%s' using schema '%s'",
+            total_pages,
+            source_file,
+            schema.name,
+        )
 
         # DEBUG: Log exact schema fields being used (no caching - rebuilt each time)
         field_names = [f.name for f in schema.fields]
@@ -1014,7 +1047,24 @@ Return data in the EXACT JSON format specified in the user prompt."""
             field_names,
         )
         
-        base64_image = self._image_to_base64(image)
+        # For extraction, we want ALL pages if <= 10, otherwise chunk
+        if total_pages <= 10:
+            # Process all pages in a single request
+            return await self._extract_from_images(images, schema, source_file)
+        else:
+            # Process in chunks of 5 pages, then merge results
+            logger.info("Large document (%d pages): processing in chunks of 5", total_pages)
+            return await self._extract_from_images_chunked(images, schema, source_file)
+
+    async def _extract_from_images(
+        self,
+        images: list[Image.Image],
+        schema: SchemaDefinition,
+        source_file: str,
+    ) -> ExtractionResult:
+        """Extract data from a list of images (single request)."""
+        # Convert all images to base64
+        base64_images = [self._image_to_base64(img) for img in images]
 
         # Build dynamic extraction prompt (rebuilt fresh for each extraction - NO CACHING)
         extraction_prompt = self._build_extraction_prompt(schema)
@@ -1023,6 +1073,21 @@ Return data in the EXACT JSON format specified in the user prompt."""
         logger.debug("DEBUG AI_SERVICE: Extraction prompt preview: %s...", extraction_prompt[:500])
 
         try:
+            # Build content with multiple images
+            content = [
+                {"type": "text", "text": extraction_prompt},
+            ]
+            
+            # Add all images
+            for base64_img in base64_images:
+                content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/png;base64,{base64_img}",
+                        "detail": "high",
+                    },
+                })
+            
             # Use standard chat.completions.create with json_object for logprobs access
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -1030,16 +1095,7 @@ Return data in the EXACT JSON format specified in the user prompt."""
                     {"role": "system", "content": self.EXTRACTION_SYSTEM_PROMPT},
                     {
                         "role": "user",
-                        "content": [
-                            {"type": "text", "text": extraction_prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/png;base64,{base64_image}",
-                                    "detail": "high",
-                                },
-                            },
-                        ],
+                        "content": content,
                     },
                 ],
                 response_format={"type": "json_object"},
@@ -1127,6 +1183,126 @@ Return data in the EXACT JSON format specified in the user prompt."""
             logger.exception("Data extraction failed")
             raise AIServiceError(f"Data extraction failed: {e}") from e
 
+    async def _extract_from_images_chunked(
+        self,
+        images: list[Image.Image],
+        schema: SchemaDefinition,
+        source_file: str,
+    ) -> ExtractionResult:
+        """Extract data from images in chunks of 5, then merge results."""
+        chunk_size = 5
+        all_results: list[ExtractionResult] = []
+        
+        # Process in chunks
+        for i in range(0, len(images), chunk_size):
+            chunk = images[i:i + chunk_size]
+            chunk_num = (i // chunk_size) + 1
+            total_chunks = (len(images) + chunk_size - 1) // chunk_size
+            logger.info(
+                "Processing chunk %d/%d (%d pages) for '%s'",
+                chunk_num,
+                total_chunks,
+                len(chunk),
+                source_file,
+            )
+            
+            chunk_result = await self._extract_from_images(chunk, schema, source_file)
+            all_results.append(chunk_result)
+        
+        # Merge results
+        return self._merge_extraction_results(all_results, schema, source_file)
+    
+    def _merge_extraction_results(
+        self,
+        results: list[ExtractionResult],
+        schema: SchemaDefinition,
+        source_file: str,
+    ) -> ExtractionResult:
+        """Merge multiple extraction results into one, appending array fields."""
+        if not results:
+            raise AIServiceError("No results to merge")
+        
+        if len(results) == 1:
+            return results[0]
+        
+        # Start with first result
+        merged_data = results[0].extracted_data.copy()
+        merged_field_confidences: dict[str, list[float]] = {}
+        all_warnings: list[str] = []
+        all_confidences: list[float] = []
+        
+        # Initialize field confidences from first result
+        for field_name, conf in results[0].field_confidences.items():
+            merged_field_confidences[field_name] = [conf]
+        
+        all_confidences.append(results[0].confidence)
+        all_warnings.extend(results[0].warnings)
+        
+        # Merge subsequent results
+        for result in results[1:]:
+            all_confidences.append(result.confidence)
+            all_warnings.extend(result.warnings)
+            
+            # Merge field confidences
+            for field_name, conf in result.field_confidences.items():
+                if field_name not in merged_field_confidences:
+                    merged_field_confidences[field_name] = []
+                merged_field_confidences[field_name].append(conf)
+            
+            # Merge extracted data
+            for field_name, value in result.extracted_data.items():
+                # Check if this field is an array type
+                field_def = next((f for f in schema.fields if f.name == field_name), None)
+                is_array = field_def and field_def.type == FieldType.ARRAY
+                
+                if is_array and isinstance(value, list):
+                    # Append array items
+                    if field_name in merged_data:
+                        if isinstance(merged_data[field_name], list):
+                            merged_data[field_name].extend(value)
+                        else:
+                            merged_data[field_name] = [merged_data[field_name]] + value
+                    else:
+                        merged_data[field_name] = value
+                else:
+                    # For non-array fields, keep the latest value (or merge intelligently)
+                    # For now, prefer non-null values
+                    if value is not None and value != "":
+                        if field_name not in merged_data or merged_data[field_name] is None or merged_data[field_name] == "":
+                            merged_data[field_name] = value
+        
+        # Calculate average field confidences
+        final_field_confidences: dict[str, float] = {}
+        for field_name, conf_list in merged_field_confidences.items():
+            valid_confs = [c for c in conf_list if isinstance(c, (int, float)) and 0 <= c <= 1]
+            if valid_confs:
+                final_field_confidences[field_name] = sum(valid_confs) / len(valid_confs)
+        
+        # Calculate overall confidence as average
+        overall_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0.0
+        
+        # Validate merged data
+        validation = validate_extracted_data(merged_data, schema)
+        
+        # Deduplicate warnings
+        unique_warnings = list(set(all_warnings + validation.warnings))
+        
+        logger.info(
+            "Merged %d extraction results: %d fields, confidence=%.3f",
+            len(results),
+            len(merged_data),
+            overall_confidence,
+        )
+        
+        return ExtractionResult(
+            source_file=source_file,
+            detected_schema=schema,
+            extracted_data=validation.validated_data,
+            confidence=overall_confidence,
+            warnings=unique_warnings,
+            field_confidences=final_field_confidences,
+        )
+
     def _build_extraction_prompt(self, schema: SchemaDefinition) -> str:
         """Build a dynamic extraction prompt from the schema.
         
@@ -1204,17 +1380,17 @@ Field names to extract: {json.dumps(field_names)}"""
     # Legacy method for backwards compatibility
     # =========================================================================
 
-    async def suggest_schema(self, image: Image.Image) -> SchemaDefinition:
+    async def suggest_schema(self, images: list[Image.Image] | Image.Image) -> SchemaDefinition:
         """
         Alias for discover_schema for backwards compatibility.
 
         Args:
-            image: PIL Image of the document page.
+            images: Single PIL Image or list of PIL Images (representative pages).
 
         Returns:
             SchemaDefinition based on AI analysis.
         """
-        return await self.discover_schema(image)
+        return await self.discover_schema(images)
 
     # =========================================================================
     # Mock Data for Development

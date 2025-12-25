@@ -200,6 +200,88 @@ class PDFService:
         buffer.seek(0)
         return buffer.getvalue()
 
+    def get_representative_pages(
+        self, file_bytes: bytes | BinaryIO, max_images: int = 6
+    ) -> list[Image.Image]:
+        """
+        Get a representative sample of pages from a PDF for schema discovery.
+        
+        Strategy:
+        - Always include first 2 pages (cover, summary)
+        - Always include last 2 pages (conclusions, footer info)
+        - Fill remaining slots with uniformly strided pages from the middle
+        
+        Example (18 pages, max=6): [0, 1, 6, 11, 16, 17]
+        
+        Args:
+            file_bytes: PDF file as bytes or file-like object.
+            max_images: Maximum number of pages to return (default: 6).
+            
+        Returns:
+            List of PIL Images for the selected pages (0-indexed).
+        """
+        # Convert all pages to images
+        all_images = self.convert_pdf_to_images(file_bytes)
+        total_pages = len(all_images)
+        
+        logger.info(
+            "Selecting representative pages: total=%d, max=%d",
+            total_pages,
+            max_images,
+        )
+        
+        # If total pages <= max_images, return all
+        if total_pages <= max_images:
+            logger.info("Returning all %d pages", total_pages)
+            return all_images
+        
+        # Select representative pages
+        selected_indices: list[int] = []
+        
+        # Always include first 2 pages (0-indexed: 0, 1)
+        selected_indices.extend([0, 1])
+        
+        # Always include last 2 pages (0-indexed: -2, -1)
+        selected_indices.extend([total_pages - 2, total_pages - 1])
+        
+        # Calculate remaining slots
+        remaining_slots = max_images - 4
+        
+        if remaining_slots > 0:
+            # Fill with uniformly strided pages from the middle
+            # Middle range: from index 2 to total_pages - 3 (exclusive)
+            middle_start = 2
+            middle_end = total_pages - 3
+            
+            if middle_end > middle_start:
+                # Calculate stride
+                middle_range = middle_end - middle_start + 1
+                if remaining_slots >= middle_range:
+                    # If we have more slots than middle pages, include all middle pages
+                    selected_indices.extend(range(middle_start, middle_end + 1))
+                else:
+                    # Uniformly stride through middle pages
+                    stride = middle_range / (remaining_slots + 1)
+                    for i in range(remaining_slots):
+                        idx = middle_start + int((i + 1) * stride)
+                        if idx not in selected_indices:
+                            selected_indices.append(idx)
+        
+        # Sort indices and remove duplicates
+        selected_indices = sorted(set(selected_indices))
+        
+        # Limit to max_images (in case of rounding issues)
+        selected_indices = selected_indices[:max_images]
+        
+        logger.info(
+            "Selected representative page indices: %s (out of %d total)",
+            selected_indices,
+            total_pages,
+        )
+        
+        # Return selected images
+        return [all_images[i] for i in selected_indices]
+
 
 # Singleton instance for convenience
 _pdf_service: PDFService | None = None

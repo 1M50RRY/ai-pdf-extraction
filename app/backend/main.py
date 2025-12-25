@@ -380,7 +380,9 @@ async def upload_sample(
             page_count = 1
 
         try:
-            first_page_image = pdf_service.convert_first_page(file_bytes)
+            # Use adaptive sampling to get representative pages for schema discovery
+            representative_pages = pdf_service.get_representative_pages(file_bytes, max_images=6)
+            logger.info("Selected %d representative pages for schema discovery", len(representative_pages))
         except PDFConversionError as e:
             logger.error("PDF conversion failed: %s", e)
             raise HTTPException(
@@ -389,7 +391,7 @@ async def upload_sample(
             )
 
         try:
-            suggested_schema = await ai_service.suggest_schema(first_page_image)
+            suggested_schema = await ai_service.suggest_schema(representative_pages)
         except AIServiceError as e:
             logger.error("AI schema suggestion failed: %s", e)
             raise HTTPException(
@@ -487,47 +489,43 @@ async def process_batch_documents(
                     db.commit()
                     return (False, str(e))
 
-                # Extract data from each page
-                total_confidence = 0.0
-                page_warnings: list[str] = []
+                # Extract data from all pages (extract_data handles chunking if > 10 pages)
+                page_source = f"{filename}"
+                try:
+                    # DEBUG: Verify the exact schema being sent to AI
+                    print(f"DEBUG: AI will extract using fields: {[f.name for f in schema.fields]}")
+                    logger.info(
+                        "DEBUG EXTRACTION: Sending to AI - schema='%s', fields=%s, pages=%d",
+                        schema.name,
+                        [f.name for f in schema.fields],
+                        len(page_images),
+                    )
+                    # Pass all pages - extract_data will handle chunking if needed
+                    result = await ai_service.extract_data(page_images, schema, page_source)
+                    
+                    # Save extraction result (including per-field confidences)
+                    # For multi-page documents, we save as page 1 (representing the full document)
+                    extraction = Extraction(
+                        document_id=doc.id,
+                        page_number=1,
+                        data=result.extracted_data,
+                        confidence=result.confidence,
+                        field_confidences=result.field_confidences,
+                        warnings=result.warnings,
+                    )
+                    db.add(extraction)
 
-                for page_num, image in enumerate(page_images, start=1):
-                    page_source = f"{filename} (page {page_num})"
-                    try:
-                        # DEBUG: Verify the exact schema being sent to AI
-                        print(f"DEBUG: AI will extract using fields: {[f.name for f in schema.fields]}")
-                        logger.info(
-                            "DEBUG EXTRACTION: Sending to AI - schema='%s', fields=%s",
-                            schema.name,
-                            [f.name for f in schema.fields],
-                        )
-                        result = await ai_service.extract_data(image, schema, page_source)
-                        
-                        # Save extraction result (including per-field confidences)
-                        extraction = Extraction(
-                            document_id=doc.id,
-                            page_number=page_num,
-                            data=result.extracted_data,
-                            confidence=result.confidence,
-                            field_confidences=result.field_confidences,
-                            warnings=result.warnings,
-                        )
-                        db.add(extraction)
-                        total_confidence += result.confidence
-                        page_warnings.extend(result.warnings)
-
-                    except AIServiceError as e:
-                        logger.warning("Extraction failed for %s: %s", page_source, e)
-                        # Save failed extraction
-                        extraction = Extraction(
-                            document_id=doc.id,
-                            page_number=page_num,
-                            data={},
-                            confidence=0.0,
-                            warnings=[f"Extraction failed: {e}"],
-                        )
-                        db.add(extraction)
-                        page_warnings.append(f"Page {page_num}: {e}")
+                except AIServiceError as e:
+                    logger.warning("Extraction failed for %s: %s", page_source, e)
+                    # Save failed extraction
+                    extraction = Extraction(
+                        document_id=doc.id,
+                        page_number=1,
+                        data={},
+                        confidence=0.0,
+                        warnings=[f"Extraction failed: {e}"],
+                    )
+                    db.add(extraction)
 
                 # Update document status
                 doc.status = DocumentStatus.COMPLETED
@@ -535,10 +533,10 @@ async def process_batch_documents(
                 db.commit()
 
                 logger.info(
-                    "Processed document %s: %d pages, avg confidence %.2f",
+                    "Processed document %s: %d pages, confidence %.2f",
                     filename,
                     len(page_images),
-                    total_confidence / len(page_images) if page_images else 0,
+                    result.confidence if 'result' in locals() else 0.0,
                 )
                 return (True, None)
 
@@ -1402,27 +1400,28 @@ async def extract_batch_sync(
         results: list[ExtractionResult] = []
         total_confidence = 0.0
 
-        for i, image in enumerate(page_images, start=1):
-            page_source = f"{file.filename} (page {i})"
-            try:
-                result = await ai_service.extract_data(image, schema, page_source)
-                results.append(result)
-                total_confidence += result.confidence
-            except AIServiceError as e:
-                logger.warning("Extraction failed for page %d: %s", i, e)
-                results.append(
-                    ExtractionResult(
-                        source_file=page_source,
-                        detected_schema=schema,
-                        extracted_data={},
-                        confidence=0.0,
-                        warnings=[f"Extraction failed: {e}"],
-                    )
+        # Extract from all pages (extract_data handles chunking if > 10 pages)
+        page_source = f"{file.filename}"
+        try:
+            result = await ai_service.extract_data(page_images, schema, page_source)
+            results.append(result)
+            total_confidence = result.confidence
+        except AIServiceError as e:
+            logger.warning("Extraction failed for %s: %s", page_source, e)
+            results.append(
+                ExtractionResult(
+                    source_file=page_source,
+                    detected_schema=schema,
+                    extracted_data={},
+                    confidence=0.0,
+                    warnings=[f"Extraction failed: {e}"],
                 )
+            )
+            total_confidence = 0.0
 
         total_pages = len(page_images)
-        successful = sum(1 for r in results if r.confidence > 0)
-        avg_confidence = total_confidence / total_pages if total_pages > 0 else 0.0
+        successful = 1 if results and results[0].confidence > 0 else 0
+        avg_confidence = total_confidence
 
         return ExtractBatchResponse(
             results=results,
