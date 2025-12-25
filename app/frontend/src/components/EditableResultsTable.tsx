@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -19,6 +19,7 @@ import {
   FileText,
   Info,
   Loader2,
+  ChevronRight,
 } from "lucide-react";
 import { updateExtraction, approveBatch } from "../api";
 import type { SchemaDefinition } from "../types";
@@ -115,6 +116,43 @@ interface EditableCellProps {
   onUpdate: (extractionId: string, fieldName: string, value: unknown) => Promise<void>;
 }
 
+// Component to render array values
+function ArrayCell({ value }: { value: unknown[] }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!Array.isArray(value) || value.length === 0) {
+    return <span className="text-sm text-slate-400">Empty array</span>;
+  }
+
+  return (
+    <div className="max-w-[300px]">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
+      >
+        <ChevronRight
+          className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+        />
+        <span>{value.length} item{value.length !== 1 ? "s" : ""}</span>
+      </button>
+      {isExpanded && (
+        <div className="mt-2 ml-4 space-y-2 max-h-48 overflow-y-auto">
+          {value.map((item, idx) => (
+            <div
+              key={idx}
+              className="bg-slate-700/50 rounded p-2 text-xs font-mono text-slate-300"
+            >
+              <pre className="whitespace-pre-wrap break-words">
+                {JSON.stringify(item, null, 2)}
+              </pre>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function EditableCell({
   value,
   extractionId,
@@ -124,17 +162,42 @@ function EditableCell({
   onUpdate,
 }: EditableCellProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(String(value ?? ""));
+  const [editValue, setEditValue] = useState(
+    Array.isArray(value) ? JSON.stringify(value) : String(value ?? "")
+  );
   const [isSaving, setIsSaving] = useState(false);
 
+  // Debug logging
+  console.log("EditableCell - Row Data:", { extractionId, fieldName, value, confidence });
+
   const handleBlur = async () => {
-    if (editValue !== String(value ?? "")) {
+    // Parse the value appropriately
+    let parsedValue: unknown = editValue;
+    
+    // Try to parse as JSON if it looks like JSON
+    if (editValue.trim().startsWith("{") || editValue.trim().startsWith("[")) {
+      try {
+        parsedValue = JSON.parse(editValue);
+      } catch {
+        // If parsing fails, keep as string
+        parsedValue = editValue;
+      }
+    }
+
+    // Only update if value actually changed
+    const currentValueStr = Array.isArray(value)
+      ? JSON.stringify(value)
+      : String(value ?? "");
+    
+    if (editValue !== currentValueStr) {
       setIsSaving(true);
       try {
-        await onUpdate(extractionId, fieldName, editValue);
+        // Call the API to persist the change
+        await onUpdate(extractionId, fieldName, parsedValue);
+        console.log("Successfully updated field:", fieldName, "to:", parsedValue);
       } catch (err) {
         console.error("Failed to update:", err);
-        setEditValue(String(value ?? ""));
+        setEditValue(currentValueStr); // Revert on error
       } finally {
         setIsSaving(false);
       }
@@ -146,35 +209,58 @@ function EditableCell({
     if (e.key === "Enter") {
       handleBlur();
     } else if (e.key === "Escape") {
-      setEditValue(String(value ?? ""));
+      setEditValue(
+        Array.isArray(value) ? JSON.stringify(value) : String(value ?? "")
+      );
       setIsEditing(false);
     }
   };
 
-  // Confidence-based cell coloring: Green > 0.9, Orange < 0.7, Red < 0.5
+  // Confidence-based cell coloring with background
   let cellClass = "text-sm text-slate-300";
+  let bgClass = "";
   if (confidence >= 0.9) {
     cellClass = "text-sm text-emerald-300";
   } else if (confidence < 0.5) {
-    cellClass = "text-sm text-red-400 font-medium bg-red-500/10 px-2 py-1 rounded";
+    cellClass = "text-sm text-red-400 font-medium";
+    bgClass = "bg-red-500/10";
   } else if (confidence < 0.7) {
-    cellClass = "text-sm text-amber-400 bg-amber-500/10 px-2 py-1 rounded";
+    cellClass = "text-sm text-amber-400";
+    bgClass = "bg-amber-500/10";
   } else if (confidence < 0.8) {
-    cellClass = "text-sm text-amber-300 bg-amber-500/5 px-2 py-1 rounded";
+    cellClass = "text-sm text-amber-300";
+    bgClass = "bg-amber-500/5";
+  }
+
+  // Handle array values - show special renderer
+  if (Array.isArray(value) && !isEditing) {
+    return (
+      <div className={`relative ${bgClass} px-2 py-1 rounded`}>
+        <ArrayCell value={value} />
+        {confidence < 0.8 && (
+          <span
+            className="absolute top-0 right-0 text-xs text-slate-500"
+            title={`Confidence: ${Math.round(confidence * 100)}%`}
+          >
+            {Math.round(confidence * 100)}%
+          </span>
+        )}
+      </div>
+    );
   }
 
   if (isEditing) {
     return (
       <div className="relative">
-        <input
-          type="text"
+        <textarea
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           autoFocus
           disabled={isSaving}
-          className="w-full bg-slate-700 border-2 border-indigo-500 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none"
+          rows={Array.isArray(value) ? 4 : 1}
+          className="w-full bg-slate-700 border-2 border-indigo-500 rounded px-2 py-1 text-sm text-slate-200 focus:outline-none font-mono"
         />
         {isSaving && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -187,20 +273,31 @@ function EditableCell({
 
   return (
     <div
-      className={`relative group cursor-text ${cellClass} max-w-[200px] whitespace-nowrap overflow-x-auto scrollbar-hide`}
+      className={`relative group cursor-text ${cellClass} ${bgClass} max-w-[200px] whitespace-nowrap overflow-x-auto scrollbar-hide px-2 py-1 rounded`}
       onClick={() => setIsEditing(true)}
+      title={`Confidence: ${Math.round(confidence * 100)}%`}
     >
       {/* Override indicator */}
       {hasOverride && (
-        <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10" title="Manually edited" />
+        <div
+          className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10"
+          title="Manually edited"
+        />
       )}
-      
+
       <div className="flex items-center gap-1">
         <span className={hasOverride ? "pl-2" : ""}>
           {value !== null && value !== undefined ? String(value) : "—"}
         </span>
         <Edit3 className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       </div>
+      
+      {/* Confidence tooltip indicator */}
+      {confidence < 0.8 && (
+        <span className="absolute top-0 right-0 text-xs text-slate-500 opacity-0 group-hover:opacity-100">
+          {Math.round(confidence * 100)}%
+        </span>
+      )}
     </div>
   );
 }
@@ -217,17 +314,26 @@ export function EditableResultsTable({
   const [isApproving, setIsApproving] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<"idle" | "success" | "error">("idle");
 
-  // Handle cell update
+  // Sync local state with incoming results prop (e.g., after refresh from backend)
+  useEffect(() => {
+    setLocalResults(results);
+  }, [results]);
+
+  // Handle cell update - CRITICAL: Must persist to backend and update local state
   const handleCellUpdate = useCallback(
     async (extractionId: string, fieldName: string, value: unknown) => {
+      console.log("handleCellUpdate called:", { extractionId, fieldName, value });
+      
       try {
+        // Call API to persist the change
         await updateExtraction(extractionId, { [fieldName]: value });
-        
-        // Update local state
-        setLocalResults((prev) =>
-          prev.map((r) => {
+        console.log("API update successful, updating local state");
+
+        // Update local state IMMEDIATELY after successful API call
+        setLocalResults((prev) => {
+          const updated = prev.map((r) => {
             if (r.id === extractionId) {
-              return {
+              const updatedResult = {
                 ...r,
                 extracted_data: { ...r.extracted_data, [fieldName]: value },
                 is_reviewed: true,
@@ -236,18 +342,22 @@ export function EditableResultsTable({
                   [fieldName]: { old: r.extracted_data[fieldName], new: value },
                 },
               };
+              console.log("Updated result:", updatedResult);
+              return updatedResult;
             }
             return r;
-          })
-        );
-        
-        onDataUpdate?.(localResults);
+          });
+          
+          // Notify parent component of the update
+          onDataUpdate?.(updated);
+          return updated;
+        });
       } catch (err) {
         console.error("Update failed:", err);
-        throw err;
+        throw err; // Re-throw to let EditableCell handle the error
       }
     },
-    [localResults, onDataUpdate]
+    [onDataUpdate]
   );
 
   // Handle approve all
@@ -258,7 +368,7 @@ export function EditableResultsTable({
     try {
       await approveBatch(batchId);
       setApprovalStatus("success");
-      
+
       // Update local state
       setLocalResults((prev) =>
         prev.map((r) => ({ ...r, is_reviewed: true }))
@@ -334,6 +444,16 @@ export function EditableResultsTable({
         cell: (info) => {
           const value = info.getValue();
           const row = info.row.original;
+          
+          // Debug logging
+          console.log("Row Data:", {
+            id: row.id,
+            field: field.name,
+            value,
+            field_confidences: row.field_confidences,
+            confidence: row.confidence,
+          });
+          
           const hasOverride = row.manual_overrides?.[field.name] !== undefined;
           // Use per-field confidence if available, else fall back to global
           const fieldConfidence = row.field_confidences?.[field.name] ?? row.confidence;
@@ -436,11 +556,10 @@ export function EditableResultsTable({
           <div>
             <p className="text-sm text-slate-400">Reviewed</p>
             <p
-              className={`text-2xl font-bold ${
-                reviewedCount === localResults.length
+              className={`text-2xl font-bold ${reviewedCount === localResults.length
                   ? "text-emerald-400"
                   : "text-amber-400"
-              }`}
+                }`}
             >
               {reviewedCount}/{localResults.length}
             </p>
@@ -460,11 +579,10 @@ export function EditableResultsTable({
           <button
             onClick={handleApproveAll}
             disabled={isApproving || approvalStatus === "success"}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              approvalStatus === "success"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${approvalStatus === "success"
                 ? "bg-emerald-500/20 text-emerald-400 cursor-default"
                 : "bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-600"
-            }`}
+              }`}
           >
             {isApproving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
