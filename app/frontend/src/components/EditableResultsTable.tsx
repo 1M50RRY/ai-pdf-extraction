@@ -151,11 +151,14 @@ function EditableCell({
     }
   };
 
+  // Confidence-based cell coloring: Green > 0.9, Orange < 0.7, Red < 0.5
   let cellClass = "text-sm text-slate-300";
-  if (confidence < 0.5) {
-    cellClass = "text-sm text-red-300 bg-red-500/10 px-2 py-1 rounded";
-  } else if (confidence < 0.8) {
-    cellClass = "text-sm text-amber-300 bg-amber-500/10 px-2 py-1 rounded";
+  if (confidence >= 0.9) {
+    cellClass = "text-sm text-emerald-300";
+  } else if (confidence < 0.5) {
+    cellClass = "text-sm text-red-400 font-medium";
+  } else if (confidence < 0.7) {
+    cellClass = "text-sm text-amber-400";
   }
 
   if (isEditing) {
@@ -182,19 +185,19 @@ function EditableCell({
 
   return (
     <div
-      className={`relative group cursor-text ${cellClass}`}
+      className={`relative group cursor-text ${cellClass} max-w-[200px] whitespace-nowrap overflow-x-auto scrollbar-hide`}
       onClick={() => setIsEditing(true)}
     >
       {/* Override indicator */}
       {hasOverride && (
-        <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500" title="Manually edited" />
+        <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10" title="Manually edited" />
       )}
       
       <div className="flex items-center gap-1">
         <span className={hasOverride ? "pl-2" : ""}>
           {value !== null && value !== undefined ? String(value) : "—"}
         </span>
-        <Edit3 className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Edit3 className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
       </div>
     </div>
   );
@@ -288,13 +291,13 @@ export function EditableResultsTable({
         accessorKey: "source_file",
         header: "Source File",
         cell: (info) => (
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-slate-500" />
-            <span className="text-sm font-mono text-slate-300">
+          <div className="flex items-center gap-2 max-w-[180px] whitespace-nowrap overflow-x-auto scrollbar-hide">
+            <FileText className="w-4 h-4 text-slate-500 flex-shrink-0" />
+            <span className="text-sm font-mono text-slate-300 truncate">
               {info.getValue() as string}
             </span>
             {info.row.original.is_reviewed && (
-              <span title="Reviewed">
+              <span title="Reviewed" className="flex-shrink-0">
                 <CheckCircle className="w-4 h-4 text-emerald-400" />
               </span>
             )}

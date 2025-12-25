@@ -16,15 +16,13 @@ import {
   LiveProgress,
   EditableResultsTable,
   ValidationModal,
-  HistoryModal,
+  HistoryPage,
   type EditableExtractionResult,
 } from "./components";
 import {
   uploadSample,
   healthCheck,
   startBatchExtraction,
-  getBatchStatus,
-  getSchema,
   type BatchStatusResponse,
 } from "./api";
 import type {
@@ -42,9 +40,11 @@ const STEPS: { id: AppStep; label: string; icon: React.ReactNode }[] = [
 function StepIndicator({
   currentStep,
   onStepClick,
+  onNavigateToUpload,
 }: {
   currentStep: AppStep;
   onStepClick: (step: AppStep) => void;
+  onNavigateToUpload: () => void;
 }) {
   const currentIndex = STEPS.findIndex((s) => s.id === currentStep);
 
@@ -58,7 +58,16 @@ function StepIndicator({
         return (
           <button
             key={step.id}
-            onClick={() => isClickable && onStepClick(step.id)}
+            onClick={() => {
+              if (isClickable) {
+                // If navigating back to upload, force full reset
+                if (step.id === "upload") {
+                  onNavigateToUpload();
+                } else {
+                  onStepClick(step.id);
+                }
+              }
+            }}
             disabled={!isClickable}
             className={`
               flex items-center gap-2 px-4 py-2 rounded-lg transition-all
@@ -96,8 +105,8 @@ export default function App() {
   const [selectedResult, setSelectedResult] = useState<EditableExtractionResult | null>(null);
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | undefined>(undefined);
 
-  // History modal state
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  // History view state
+  const [showHistoryPage, setShowHistoryPage] = useState(false);
 
   // Check backend health on mount
   useEffect(() => {
@@ -230,43 +239,6 @@ export default function App() {
     setSelectedPdfFile(undefined);
   };
 
-  // Handle selecting a batch from history
-  const handleSelectHistoryBatch = useCallback(async (selectedBatchId: string) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const batchStatus = await getBatchStatus(selectedBatchId);
-      
-      // Fetch schema if available (needed to display results)
-      if (batchStatus.schema_id) {
-        try {
-          const savedSchema = await getSchema(batchStatus.schema_id);
-          setSchema(savedSchema.structure);
-          setSchemaId(savedSchema.id);
-        } catch (schemaErr) {
-          console.warn("Could not load schema for batch:", schemaErr);
-          // Continue without schema - results will still be shown
-        }
-      }
-      
-      // If batch is completed, show results
-      if (batchStatus.status === "completed" || batchStatus.progress_percent >= 100) {
-        setBatchId(selectedBatchId);
-        handleBatchComplete(batchStatus);
-      } else {
-        // If still processing, show progress view
-        setBatchId(selectedBatchId);
-        setIsProcessing(true);
-        setCurrentStep("batch");
-      }
-    } catch (err) {
-      console.error("Failed to load batch:", err);
-      setError(err instanceof Error ? err.message : "Failed to load batch");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [handleBatchComplete]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950">
       {/* Header */}
@@ -288,7 +260,7 @@ export default function App() {
             {/* History Button & Backend Status */}
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setIsHistoryOpen(true)}
+                onClick={() => setShowHistoryPage(true)}
                 className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
               >
                 <History className="w-4 h-4" />
@@ -317,7 +289,11 @@ export default function App() {
 
           {/* Step Indicator */}
           <div className="mt-4">
-            <StepIndicator currentStep={currentStep} onStepClick={setCurrentStep} />
+            <StepIndicator 
+              currentStep={currentStep} 
+              onStepClick={setCurrentStep}
+              onNavigateToUpload={resetToStart}
+            />
           </div>
         </div>
       </header>
@@ -337,8 +313,15 @@ export default function App() {
 
         {/* Step Content */}
         <div className="bg-slate-800/30 rounded-2xl border border-slate-700/50 p-8">
+          {/* History Page */}
+          {showHistoryPage && (
+            <HistoryPage 
+              onBack={() => setShowHistoryPage(false)} 
+            />
+          )}
+
           {/* Step 1: Upload Sample */}
-          {currentStep === "upload" && (
+          {!showHistoryPage && currentStep === "upload" && (
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-slate-100">
@@ -357,10 +340,10 @@ export default function App() {
           )}
 
           {/* Step 2: Schema Editor */}
-          {currentStep === "schema" && schema && (
+          {!showHistoryPage && currentStep === "schema" && schema && (
       <div>
               <button
-                onClick={() => setCurrentStep("upload")}
+                onClick={resetToStart}
                 className="flex items-center gap-2 text-slate-400 hover:text-slate-200 mb-6 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -377,10 +360,22 @@ export default function App() {
           )}
 
           {/* Step 3: Batch Processing */}
-          {currentStep === "batch" && schema && (
+          {!showHistoryPage && currentStep === "batch" && schema && (
             <div>
               <button
-                onClick={() => setCurrentStep(schemaId ? "upload" : "schema")}
+                onClick={() => {
+                  if (schemaId) {
+                    // If using a saved template, reset everything
+                    resetToStart();
+                  } else {
+                    // Otherwise just go back to schema (keep the schema state)
+                    setBatchFiles([]);
+                    setBatchId(null);
+                    setIsProcessing(false);
+                    setResults([]);
+                    setCurrentStep("schema");
+                  }
+                }}
                 className="flex items-center gap-2 text-slate-400 hover:text-slate-200 mb-6 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -430,7 +425,7 @@ export default function App() {
           )}
 
           {/* Step 4: Results */}
-          {currentStep === "results" && schema && results.length > 0 && batchId && (
+          {!showHistoryPage && currentStep === "results" && schema && results.length > 0 && batchId && (
             <div>
               <div className="flex items-center justify-between mb-6">
                 <button
@@ -451,7 +446,7 @@ export default function App() {
           )}
 
           {/* Empty results fallback */}
-          {currentStep === "results" && results.length === 0 && (
+          {!showHistoryPage && currentStep === "results" && results.length === 0 && (
             <div className="text-center py-12">
               <p className="text-slate-400">No results to display.</p>
               <button
@@ -488,12 +483,6 @@ export default function App() {
         />
       )}
 
-      {/* History Modal */}
-      <HistoryModal
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        onSelectBatch={handleSelectHistoryBatch}
-      />
     </div>
   );
 }
