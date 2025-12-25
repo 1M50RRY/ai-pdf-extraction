@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Zap,
   AlertCircle,
+  History,
 } from "lucide-react";
 import {
   UploadZone,
@@ -15,12 +16,15 @@ import {
   LiveProgress,
   EditableResultsTable,
   ValidationModal,
+  HistoryModal,
   type EditableExtractionResult,
 } from "./components";
 import {
   uploadSample,
   healthCheck,
   startBatchExtraction,
+  getBatchStatus,
+  getSchema,
   type BatchStatusResponse,
 } from "./api";
 import type {
@@ -91,6 +95,9 @@ export default function App() {
   // Validation modal state
   const [selectedResult, setSelectedResult] = useState<EditableExtractionResult | null>(null);
   const [selectedPdfFile, setSelectedPdfFile] = useState<File | undefined>(undefined);
+
+  // History modal state
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Check backend health on mount
   useEffect(() => {
@@ -223,6 +230,43 @@ export default function App() {
     setSelectedPdfFile(undefined);
   };
 
+  // Handle selecting a batch from history
+  const handleSelectHistoryBatch = useCallback(async (selectedBatchId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const batchStatus = await getBatchStatus(selectedBatchId);
+      
+      // Fetch schema if available (needed to display results)
+      if (batchStatus.schema_id) {
+        try {
+          const savedSchema = await getSchema(batchStatus.schema_id);
+          setSchema(savedSchema.structure);
+          setSchemaId(savedSchema.id);
+        } catch (schemaErr) {
+          console.warn("Could not load schema for batch:", schemaErr);
+          // Continue without schema - results will still be shown
+        }
+      }
+      
+      // If batch is completed, show results
+      if (batchStatus.status === "completed" || batchStatus.progress_percent >= 100) {
+        setBatchId(selectedBatchId);
+        handleBatchComplete(batchStatus);
+      } else {
+        // If still processing, show progress view
+        setBatchId(selectedBatchId);
+        setIsProcessing(true);
+        setCurrentStep("batch");
+      }
+    } catch (err) {
+      console.error("Failed to load batch:", err);
+      setError(err instanceof Error ? err.message : "Failed to load batch");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [handleBatchComplete]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950">
       {/* Header */}
@@ -241,24 +285,33 @@ export default function App() {
               </div>
             </div>
 
-            {/* Backend Status */}
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  isBackendHealthy === true
-                    ? "bg-emerald-400"
+            {/* History Button & Backend Status */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setIsHistoryOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <History className="w-4 h-4" />
+                <span className="text-sm">History</span>
+              </button>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    isBackendHealthy === true
+                      ? "bg-emerald-400"
+                      : isBackendHealthy === false
+                        ? "bg-red-400"
+                        : "bg-amber-400 animate-pulse"
+                  }`}
+                />
+                <span className="text-xs text-slate-400">
+                  {isBackendHealthy === true
+                    ? "Backend Connected"
                     : isBackendHealthy === false
-                      ? "bg-red-400"
-                      : "bg-amber-400 animate-pulse"
-                }`}
-              />
-              <span className="text-xs text-slate-400">
-                {isBackendHealthy === true
-                  ? "Backend Connected"
-                  : isBackendHealthy === false
-                    ? "Backend Offline"
-                    : "Checking..."}
-              </span>
+                      ? "Backend Offline"
+                      : "Checking..."}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -434,6 +487,13 @@ export default function App() {
           onClose={handleCloseModal}
         />
       )}
+
+      {/* History Modal */}
+      <HistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onSelectBatch={handleSelectHistoryBatch}
+      />
     </div>
   );
 }

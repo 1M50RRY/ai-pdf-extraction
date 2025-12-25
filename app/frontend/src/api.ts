@@ -324,4 +324,37 @@ export async function healthCheck(): Promise<boolean> {
   }
 }
 
+// =============================================================================
+// Batch History
+// =============================================================================
+
+export interface BatchSummary {
+  id: string;
+  schema_name: string | null;
+  created_at: string;
+  completed_at: string | null;
+  total_documents: number;
+  successful_documents: number;
+  failed_documents: number;
+  status: string;
+}
+
+export interface BatchHistoryResponse {
+  batches: BatchSummary[];
+  total: number;
+}
+
+/**
+ * Get batch processing history
+ */
+export async function getBatchHistory(
+  limit: number = 50,
+  offset: number = 0
+): Promise<BatchHistoryResponse> {
+  const response = await api.get<BatchHistoryResponse>(
+    `/batches?limit=${limit}&offset=${offset}`
+  );
+  return response.data;
+}
+
 export default api;

@@ -166,32 +166,35 @@ export function ValidationModal({
               </div>
             </div>
 
-            {/* PDF Display */}
+            {/* PDF Display - Fixed scaling */}
             <div className="flex-1 overflow-auto flex items-start justify-center p-4">
               {pdfUrl ? (
-                <Document
-                  file={pdfUrl}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  loading={
-                    <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
-                    </div>
-                  }
-                  error={
-                    <div className="text-center text-slate-400 p-8">
-                      <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>Unable to load PDF preview</p>
-                    </div>
-                  }
-                >
-                  <Page
-                    pageNumber={currentPage}
-                    scale={scale}
-                    renderTextLayer={false}
-                    renderAnnotationLayer={false}
-                    className="shadow-2xl"
-                  />
-                </Document>
+                <div className="pdf-container" style={{ maxWidth: '100%', height: 'auto' }}>
+                  <Document
+                    file={pdfUrl}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    loading={
+                      <div className="flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500" />
+                      </div>
+                    }
+                    error={
+                      <div className="text-center text-slate-400 p-8">
+                        <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Unable to load PDF preview</p>
+                      </div>
+                    }
+                  >
+                    <Page
+                      pageNumber={currentPage}
+                      scale={scale}
+                      width={500}
+                      renderTextLayer={false}
+                      renderAnnotationLayer={false}
+                      className="shadow-2xl [&_canvas]:max-w-full [&_canvas]:h-auto"
+                    />
+                  </Document>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-slate-400">
                   <FileText className="w-16 h-16 mb-4 opacity-50" />
