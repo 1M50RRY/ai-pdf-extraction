@@ -27,7 +27,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
 # Handle both package imports (when running as module) and standalone imports (uvicorn main:app)
@@ -754,13 +754,14 @@ async def extract_batch(
     db.commit()
     db.refresh(batch)
 
-    # Create document records
+    # Create document records (store file content for PDF preview)
     for filename, content, file_hash in file_data:
         doc = Document(
             batch_id=batch.id,
             filename=filename,
             file_hash=file_hash,
             file_size_bytes=len(content),
+            file_content=content,  # Store PDF content for retrieval
             status=DocumentStatus.PENDING,
         )
         db.add(doc)
@@ -1168,11 +1169,15 @@ async def update_extraction(
     old_data = extraction.data.copy()
     changed_fields = {}
 
-    # Merge new data
+    # Merge new data - ensure we preserve all existing keys
+    merged_data = old_data.copy()
     for key, value in request.data.items():
-        if key in old_data and old_data[key] != value:
-            changed_fields[key] = {"old": old_data[key], "new": value}
-        extraction.data[key] = value
+        if key in merged_data and merged_data[key] != value:
+            changed_fields[key] = {"old": merged_data[key], "new": value}
+        merged_data[key] = value
+    
+    # Update the extraction data with merged result
+    extraction.data = merged_data
 
     # Update manual overrides tracking
     if extraction.manual_overrides:
@@ -1204,6 +1209,54 @@ async def update_extraction(
         manual_overrides=extraction.manual_overrides,
         created_at=extraction.created_at.isoformat(),
         reviewed_at=extraction.reviewed_at.isoformat() if extraction.reviewed_at else None,
+    )
+
+
+@app.get("/documents/{document_id}/content")
+async def get_document_content(
+    document_id: str,
+    db: Session = Depends(get_db),
+) -> Response:
+    """
+    Retrieve the PDF file content for a document.
+    
+    Used for PDF preview in the frontend, especially for historical batches
+    where the local file blob URL is no longer available.
+    
+    Args:
+        document_id: UUID of the document.
+        db: Database session.
+        
+    Returns:
+        PDF file content with appropriate content-type headers.
+    """
+    try:
+        doc_uuid = uuid.UUID(document_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid document ID format",
+        )
+    
+    document = db.query(Document).filter(Document.id == doc_uuid).first()
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document {document_id} not found",
+        )
+    
+    if not document.file_content:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF content not available for this document",
+        )
+    
+    return Response(
+        content=document.file_content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{document.filename}"',
+        },
     )
 
 

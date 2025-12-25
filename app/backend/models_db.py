@@ -16,6 +16,7 @@ from sqlalchemy import (
     Enum,
     Float,
     ForeignKey,
+    LargeBinary,
     String,
     Text,
     UniqueConstraint,
@@ -216,6 +217,11 @@ class Document(Base):
     processed_at: Mapped[datetime | None] = mapped_column(
         DateTime,
         nullable=True,
+    )
+    file_content: Mapped[bytes | None] = mapped_column(
+        LargeBinary,
+        nullable=True,
+        comment="Stored PDF file content for retrieval",
     )
     
     # Relationships
