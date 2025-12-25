@@ -855,6 +855,7 @@ async def get_batch_status(
         extracted_data = None
         field_confidences = None
         
+        is_reviewed = False
         if doc.status == DocumentStatus.COMPLETED:
             extractions = db.query(Extraction).filter(Extraction.document_id == doc.id).all()
             if extractions:
@@ -863,6 +864,7 @@ async def get_batch_status(
                 extraction_id = str(first_extraction.id)
                 extracted_data = first_extraction.data
                 field_confidences = first_extraction.field_confidences
+                is_reviewed = first_extraction.is_reviewed  # Load reviewed status from DB
                 confidence = sum(e.confidence for e in extractions) / len(extractions)
                 for e in extractions:
                     warnings.extend(e.warnings or [])
@@ -878,6 +880,7 @@ async def get_batch_status(
                 extraction_id=extraction_id,
                 extracted_data=extracted_data,
                 field_confidences=field_confidences,
+                is_reviewed=is_reviewed,
             )
         )
 

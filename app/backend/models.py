@@ -353,6 +353,10 @@ class DocumentStatusResponse(BaseModel):
         default=None,
         description="Per-field confidence scores for UI highlighting (if completed)",
     )
+    is_reviewed: bool = Field(
+        default=False,
+        description="Whether this extraction has been reviewed/approved",
+    )
 
 
 class BatchStatusResponse(BaseModel):

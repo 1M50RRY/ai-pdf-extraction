@@ -192,7 +192,7 @@ export default function App() {
         confidence: doc.confidence || 0,
         field_confidences: doc.field_confidences, // Per-field confidence for cell highlighting
         warnings: doc.warnings,
-        is_reviewed: false,
+        is_reviewed: doc.is_reviewed || false, // Load reviewed status from backend
         manual_overrides: null,
       }));
 

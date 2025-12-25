@@ -157,7 +157,7 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
           confidence: doc.confidence || 0,
           field_confidences: doc.field_confidences,
           warnings: doc.warnings,
-          is_reviewed: false,
+          is_reviewed: doc.is_reviewed || false, // Load reviewed status from backend
           manual_overrides: null,
         }));
 
