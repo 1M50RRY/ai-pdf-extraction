@@ -312,7 +312,20 @@ def validate_extracted_data(
             continue
 
         # Type-specific validation
-        if field_def.type == FieldType.DATE:
+        if field_def.type == FieldType.ARRAY:
+            # Validate array fields - ensure it's a list
+            if not isinstance(value, list):
+                result.warnings.append(
+                    f"Field '{field_name}' expected array/list, got: {type(value).__name__}"
+                )
+                result.validated_data[field_name] = [] if value is None else [value]
+            else:
+                # Array is valid - keep as-is (no validation of nested items)
+                result.validated_data[field_name] = value
+                logger.debug("Validated array field '%s' with %d items", field_name, len(value))
+            continue
+
+        elif field_def.type == FieldType.DATE:
             parsed = parse_date(value)
             if parsed is None:
                 result.warnings.append(
@@ -381,7 +394,8 @@ def validate_extracted_data(
                     )
 
     # Math checks using dynamic validation rules from schema
-    _perform_math_checks(currency_values, schema.validation_rules, result)
+    # Pass extracted_data to filter out rules referencing nested array fields
+    _perform_math_checks(currency_values, schema.validation_rules, result, data)
 
     return result
 
@@ -522,6 +536,7 @@ def _perform_math_checks(
     numeric_values: dict[str, float],
     validation_rules: list[str],
     result: ValidationResult,
+    extracted_data: dict[str, Any] | None = None,
 ) -> None:
     """
     Perform math checks using simpleeval for dynamic expression evaluation.
@@ -532,22 +547,73 @@ def _perform_math_checks(
     - Complex formulas: "(revenue - cost) / revenue"
 
     Uses simpleeval for safe, sandboxed expression evaluation.
+    
+    Safety: Filters out rules that reference fields not in the root of extracted_data
+    to prevent crashes from nested array fields.
 
     Args:
         numeric_values: Dictionary of field_name -> parsed numeric value.
         validation_rules: List of rule strings from the schema.
         result: ValidationResult to append warnings to.
+        extracted_data: The full extracted data dict to check for field existence.
     """
     if not validation_rules:
         return
 
+    # Get root-level field names from extracted_data for safety check
+    root_fields = set(extracted_data.keys()) if extracted_data else set()
+    
     for rule in validation_rules:
+        # Safety check: Extract field names from rule and verify they exist at root level
+        # This prevents crashes if AI generates rules for nested array fields
+        rule_field_names = _extract_field_names_from_rule(rule)
+        
+        # Filter out rules that reference fields not in root (likely nested array fields)
+        if root_fields and rule_field_names:
+            missing_fields = rule_field_names - root_fields
+            if missing_fields:
+                logger.debug(
+                    "Skipping validation rule '%s' - references fields not in root: %s (likely nested array fields)",
+                    rule,
+                    missing_fields,
+                )
+                continue
+        
         success, message, failed_rule = _evaluate_validation_rule_simpleeval(
             rule, numeric_values
         )
         if not success:
             result.warnings.append(message)
             logger.warning("Validation rule failed: %s", message)
+
+
+def _extract_field_names_from_rule(rule: str) -> set[str]:
+    """
+    Extract field names from a validation rule string.
+    
+    This is a simple heuristic to find potential field names in expressions.
+    Looks for valid Python identifiers that could be field names.
+    
+    Args:
+        rule: The validation rule string (e.g., "total == subtotal + tax")
+        
+    Returns:
+        Set of potential field names found in the rule.
+    """
+    # Remove operators and parentheses to isolate identifiers
+    # This is a simple heuristic - not perfect but good enough for safety checks
+    cleaned = re.sub(r'[+\-*/()=<>!&| ]+', ' ', rule)
+    tokens = cleaned.split()
+    
+    field_names = set()
+    for token in tokens:
+        # Check if token looks like a field name (snake_case identifier)
+        if re.match(r'^[a-z_][a-z0-9_]*$', token, re.IGNORECASE):
+            # Skip known functions
+            if token.lower() not in ('sum', 'round', 'abs', 'min', 'max', 'sqrt', 'log', 'len', 'pow', 'log10'):
+                field_names.add(token)
+    
+    return field_names
 
 
 def calculate_confidence_from_logprobs(
@@ -634,6 +700,7 @@ Your goal is to analyze documents and design optimal database schemas for data e
 
 ## Field Type Selection:
 - string: Text data (names, IDs, descriptions, titles)
+- array: Tables or lists of items (e.g., invoice line items, transaction lists, product catalogs)
 - currency: Money amounts (prices, totals, fees)
 - date: Dates in any format (will be normalized to YYYY-MM-DD)
 - number: Numeric values (quantities, counts, percentages as numbers)
@@ -642,6 +709,13 @@ Your goal is to analyze documents and design optimal database schemas for data e
 - phone: Phone numbers
 - address: Physical/mailing addresses
 - percentage: Percentage values (e.g., "15%", "0.15")
+
+## CRITICAL: Table/List Detection
+If you detect a table or list of items (e.g., invoice line items, transaction history, product list), you MUST:
+1. Define it as a SINGLE field with `type: array`
+2. Name this field semantically (e.g., `line_items`, `transactions`, `products`)
+3. In the description, explicitly list the columns/sub-fields to extract (e.g., "List of invoice line items containing: description, quantity, unit_price, total")
+4. Do NOT create separate fields for each column - the entire table is ONE array field
 
 IMPORTANT: For mixed text/numbers or any data that doesn't fit the above types, strictly use "string".
 Do NOT invent new types. "string" is the catch-all for any text or mixed data.
@@ -663,10 +737,16 @@ output them as validation_rules using the EXACT field names you chose.
 - With functions: "total == round(subtotal * tax_rate, 2)"
 - Absolute: "variance == abs(budget - actual)"
 
+### CRITICAL CONSTRAINT:
+- ONLY generate validation rules for fields at the ROOT level of the document (e.g., `total`, `subtotal`, `tax`)
+- Do NOT generate validation rules for fields INSIDE array fields (e.g., do NOT create rules for `line_items[0].unit_price`)
+- Validation rules should only reference document-level summary fields, not nested array item fields
+
 ### Do NOT use:
 - Excel syntax (like "SUM(A1:A5)" or "=A1+B1")
 - SQL syntax
 - Any functions not listed above
+- References to nested array fields (e.g., "line_items[0].price")
 
 ### Real-world examples:
 - If you see "Subtotal: $100, VAT: $20, Total: $120", output: "total == subtotal + vat"
@@ -819,9 +899,13 @@ Return data in the EXACT JSON format specified in the user prompt."""
                                     "1. Examine the visual layout and text to classify the document type.\n"
                                     "2. Identify ALL business-relevant data points that should be extracted. "
                                     "Do not limit the count.\n"
-                                    "3. Choose semantic field names in snake_case.\n"
-                                    "4. If you detect numerical relationships (like totals summing up), "
-                                    "output validation_rules using the exact field names you chose.\n\n"
+                                    "3. **CRITICAL: If you detect a table or list of items (e.g., invoice line items, transaction history), "
+                                    "define it as a SINGLE field with type 'array'. Name it semantically (e.g., 'line_items'). "
+                                    "In the description, explicitly list the columns to extract (e.g., 'List of items containing: description, quantity, unit_price, total').**\n"
+                                    "4. Choose semantic field names in snake_case.\n"
+                                    "5. If you detect numerical relationships at the document summary level (like totals summing up), "
+                                    "output validation_rules using the exact field names you chose. "
+                                    "Do NOT create rules for fields inside array fields.\n\n"
                                     "Provide your analysis with reasoning."
                                 ),
                             },
@@ -1061,18 +1145,46 @@ Return data in the EXACT JSON format specified in the user prompt."""
         print(f"DEBUG _build_extraction_prompt: Building prompt for fields: {field_names}")
         
         field_descriptions = []
+        array_fields = []
         for field in schema.fields:
             required_marker = " (REQUIRED)" if field.required else " (optional)"
             field_descriptions.append(
                 f"- **{field.name}** ({field.type.value}){required_marker}: {field.description}"
             )
+            if field.type == FieldType.ARRAY:
+                array_fields.append(field.name)
 
         fields_text = "\n".join(field_descriptions)
+        
+        # Build array extraction instructions
+        array_instructions = ""
+        if array_fields:
+            array_instructions = f"""
+
+## CRITICAL: Array Field Extraction
+The following fields are ARRAY types (tables/lists): {', '.join(array_fields)}
+- For each array field, you MUST extract EVERY row in the table/list
+- Do NOT stop after the first row - capture ALL rows
+- Return a JSON array of objects, where each object represents one row
+- Example structure:
+  {{
+    "extracted_data": {{
+      "line_items": [
+        {{"description": "Item 1", "quantity": 2, "unit_price": 10.00, "total": 20.00}},
+        {{"description": "Item 2", "quantity": 1, "unit_price": 15.00, "total": 15.00}},
+        {{"description": "Item 3", "quantity": 3, "unit_price": 5.00, "total": 15.00}}
+      ]
+    }},
+    "field_confidences": {{
+      "line_items": 0.95
+    }}
+  }}
+- Ensure ALL rows are captured, not just the first one"""
 
         return f"""Extract the following fields from this document image.
 
 ## Fields to Extract:
-{fields_text}
+{fields_text}{array_instructions}
 
 ## Response Format (MUST follow this exact structure):
 Return a JSON object with TWO keys:

@@ -15,6 +15,7 @@ class FieldType(str, Enum):
     """Supported field types for extraction."""
 
     STRING = "string"  # Also serves as catch-all for mixed text/data
+    ARRAY = "array"  # Array/list of objects (e.g., invoice line items, table rows)
     CURRENCY = "currency"
     DATE = "date"
     NUMBER = "number"
