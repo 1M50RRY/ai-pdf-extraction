@@ -51,6 +51,7 @@ export interface DocumentStatus {
   extraction_id: string | null;
   extracted_data: Record<string, unknown> | null;
   field_confidences: Record<string, number> | null;
+  is_reviewed: boolean;
 }
 
 export interface BatchStatusResponse {
