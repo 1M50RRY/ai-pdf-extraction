@@ -156,9 +156,11 @@ function EditableCell({
   if (confidence >= 0.9) {
     cellClass = "text-sm text-emerald-300";
   } else if (confidence < 0.5) {
-    cellClass = "text-sm text-red-400 font-medium";
+    cellClass = "text-sm text-red-400 font-medium bg-red-500/10 px-2 py-1 rounded";
   } else if (confidence < 0.7) {
-    cellClass = "text-sm text-amber-400";
+    cellClass = "text-sm text-amber-400 bg-amber-500/10 px-2 py-1 rounded";
+  } else if (confidence < 0.8) {
+    cellClass = "text-sm text-amber-300 bg-amber-500/5 px-2 py-1 rounded";
   }
 
   if (isEditing) {
