@@ -1369,7 +1369,7 @@ async def smart_repair_document(
         warnings=extraction.warnings or [],
         is_reviewed=extraction.is_reviewed,
         manual_overrides=extraction.manual_overrides,
-        created_at=extraction.extracted_at.isoformat(),
+        created_at=extraction.created_at.isoformat(),
         reviewed_at=extraction.reviewed_at.isoformat() if extraction.reviewed_at else None,
     )
 
