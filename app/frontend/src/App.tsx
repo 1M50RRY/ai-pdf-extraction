@@ -39,7 +39,7 @@ function NavigationBar() {
               <h1 className="text-xl font-bold text-slate-100">
                 PDF Extractor
               </h1>
-              <p className="text-xs text-slate-400">Enterprise Edition</p>
+              <p className="text-xs text-slate-400">MVP Edition</p>
             </div>
           </div>
 
@@ -110,7 +110,7 @@ function AppContent() {
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-16 py-6">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
-          AI PDF Extraction • Enterprise Edition • Powered by GPT-4.1
+          AI PDF Extraction • MVP Edition • Powered by GPT-4.1
         </div>
       </footer>
     </div>
