@@ -368,7 +368,7 @@ export function SmartCell({
   // Handle scalar values
   const displayValue =
     value !== null && value !== undefined ? String(value) : "—";
-  
+
   // Check if text is long enough to show popup (more than 50 chars)
   const isLongText = typeof displayValue === "string" && displayValue.length > 50;
   // Show popup button for all long text (works for both editable and non-editable cells)
@@ -453,16 +453,15 @@ export function SmartCell({
   return (
     <>
       <div
-        className={`flex items-center justify-between gap-2 h-full w-full px-2 py-1 ${bgClass} rounded ${
-          editable && onSave ? "cursor-text hover:bg-slate-800/50 transition-colors" : ""
-        }`}
+        className={`flex items-center justify-between gap-2 h-full w-full px-2 py-1 ${bgClass} rounded ${editable && onSave ? "cursor-text hover:bg-slate-800/50 transition-colors" : ""
+          }`}
         onClick={() => {
           if (editable && onSave) {
             setIsEditing(true);
           }
         }}
       >
-        <span 
+        <span
           className={`text-sm ${textClass} flex-1 whitespace-nowrap overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.2)]`}
         >
           {isLongText ? `${displayValue.substring(0, 50)}...` : displayValue}

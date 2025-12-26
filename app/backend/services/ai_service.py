@@ -377,7 +377,8 @@ def validate_extracted_data(
 
     # Step 7: Math checks using dynamic validation rules from schema
     # Pass extracted_data to filter out rules referencing nested array fields
-    _perform_math_checks(currency_values, schema.validation_rules, result, data)
+    # Pass warnings_set so math warnings are included in the final warnings list
+    _perform_math_checks(currency_values, schema.validation_rules, warnings_set, data)
 
     # Step 8: Convert warnings set to list (deduplicated)
     result.warnings = list(warnings_set)
@@ -545,7 +546,7 @@ def _evaluate_validation_rule(
 def _perform_math_checks(
     numeric_values: dict[str, float],
     validation_rules: list[str],
-    result: ValidationResult,
+    warnings_set: set[str],
     extracted_data: dict[str, Any] | None = None,
 ) -> None:
     """
@@ -564,7 +565,7 @@ def _perform_math_checks(
     Args:
         numeric_values: Dictionary of field_name -> parsed numeric value.
         validation_rules: List of rule strings from the schema.
-        result: ValidationResult to append warnings to.
+        warnings_set: Set to add warnings to (for deduplication).
         extracted_data: The full extracted data dict to check for field existence.
     """
     if not validation_rules:
@@ -593,7 +594,7 @@ def _perform_math_checks(
             rule, numeric_values
         )
         if not success:
-            result.warnings.append(message)
+            warnings_set.add(message)
             logger.warning("Validation rule failed: %s", message)
 
 
