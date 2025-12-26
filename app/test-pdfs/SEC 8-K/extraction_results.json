@@ -1,0 +1,889 @@
+{
+  "schema": {
+    "name": "SEC Form 8-K (Current Report) Schema",
+    "description": "The document is visually and textually structured as a regulatory filing for the SEC, specifically a Form 8-K. It contains identifying features such as 'FORM 8-K', the SEC's official name, legal citations, company details, securities tables, shareholder voting results, management proposals, board and officer actions, and signatures of the corporate secretary. The presence of voting tables and event descriptions is typical for an 8-K disclosing significant corporate events and meeting outcomes.",
+    "fields": [
+      {
+        "name": "company_name",
+        "type": "string",
+        "description": "Name of the company filing the report, found on the first page title (Microsoft Corporation).",
+        "required": true
+      },
+      {
+        "name": "date_of_report",
+        "type": "date",
+        "description": "Date of report or earliest event reported, shown on the first page.",
+        "required": true
+      },
+      {
+        "name": "state_of_incorporation",
+        "type": "string",
+        "description": "Jurisdiction of incorporation, found under company details.",
+        "required": false
+      },
+      {
+        "name": "commission_file_number",
+        "type": "string",
+        "description": "SEC commission file number, found under company details.",
+        "required": false
+      },
+      {
+        "name": "irs_employer_id_number",
+        "type": "string",
+        "description": "IRS employer identification number, found under company details.",
+        "required": false
+      },
+      {
+        "name": "company_address",
+        "type": "address",
+        "description": "Mailing address of the company, found in company details section.",
+        "required": false
+      },
+      {
+        "name": "company_phone",
+        "type": "phone",
+        "description": "Company contact phone number, found in company details.",
+        "required": false
+      },
+      {
+        "name": "company_website",
+        "type": "string",
+        "description": "Company investor website URL, found in contact information section.",
+        "required": false
+      },
+      {
+        "name": "securities_registered",
+        "type": "array",
+        "description": "List of securities registered under Section 12(b), including: title_of_each_class, trading_symbol, name_of_exchange_on_which_registered.",
+        "required": false
+      },
+      {
+        "name": "meeting_type",
+        "type": "string",
+        "description": "Type of meeting or event disclosed, e.g., Annual Shareholders Meeting, described in section headers.",
+        "required": true
+      },
+      {
+        "name": "meeting_date",
+        "type": "date",
+        "description": "Date of the shareholders meeting or event, found in the main event text.",
+        "required": true
+      },
+      {
+        "name": "number_of_shares_entitled_to_vote",
+        "type": "number",
+        "description": "Total number of shares of common stock entitled to vote at the meeting.",
+        "required": false
+      },
+      {
+        "name": "number_of_shares_voted",
+        "type": "number",
+        "description": "Number of shares voted in person or by proxy.",
+        "required": false
+      },
+      {
+        "name": "meeting_matters_voted_on",
+        "type": "array",
+        "description": "List of matters submitted to vote at the meeting, including for each matter: description, outcome.",
+        "required": false
+      },
+      {
+        "name": "director_election_results",
+        "type": "array",
+        "description": "List of directors and their election/voting outcomes with columns: director_name, vote_result, percentage_votes_for, votes_for, votes_against, votes_abstain, broker_non_votes.",
+        "required": false
+      },
+      {
+        "name": "shareholder_vote_results",
+        "type": "array",
+        "description": "List of voting results for each shareholder proposal/management proposal, with columns: proposal_description, vote_result, percentage_votes_for, votes_for, votes_against, votes_abstain, broker_non_votes.",
+        "required": false
+      },
+      {
+        "name": "signature_name",
+        "type": "string",
+        "description": "Name of the corporate officer signing the report, found on the last page.",
+        "required": true
+      },
+      {
+        "name": "signature_title",
+        "type": "string",
+        "description": "Title of the signing officer, found below the signature line.",
+        "required": true
+      },
+      {
+        "name": "signature_date",
+        "type": "date",
+        "description": "Date the report was signed, found near the end of the document.",
+        "required": true
+      }
+    ],
+    "version": "1.0",
+    "validation_rules": []
+  },
+  "batch_id": "4a07c409-64d3-4af1-b7be-e7bf0d2b3fac",
+  "exported_at": "2025-12-26T12:53:06.914Z",
+  "total_documents": 7,
+  "average_confidence": 0.7254285714285713,
+  "results": [
+    {
+      "id": "2de993e1-4c5a-4702-b900-fbc307eadc2b",
+      "document_id": "b29d8c04-ef4e-454d-bb54-08a5bb9e8114",
+      "source_file": "07.8-K.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "company_name": "Microsoft Corporation",
+        "date_of_report": "2025-01-29",
+        "state_of_incorporation": "Washington",
+        "commission_file_number": "001-37845",
+        "irs_employer_id_number": "91-1144442",
+        "company_address": "One Microsoft Way, Redmond, Washington 98052-6399",
+        "company_phone": "(425) 882-8080",
+        "company_website": "www.microsoft.com/investor",
+        "securities_registered": [
+          {
+            "title_of_each_class": "Common stock, $0.00000625 par value per share",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "3.125% Notes due 2028",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "2.625% Notes due 2033",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          }
+        ],
+        "meeting_type": "Financial Results Press Release",
+        "meeting_date": "2025-01-29",
+        "number_of_shares_entitled_to_vote": "N/A",
+        "number_of_shares_voted": "N/A",
+        "meeting_matters_voted_on": "N/A",
+        "director_election_results": "N/A",
+        "shareholder_vote_results": "N/A",
+        "signature_name": "Alice L. Jolla",
+        "signature_title": "Corporate Vice President and Chief Accounting Officer",
+        "signature_date": "2025-01-29"
+      },
+      "confidence": 0.729,
+      "field_confidences": {
+        "company_name": 1,
+        "date_of_report": 1,
+        "state_of_incorporation": 1,
+        "commission_file_number": 1,
+        "irs_employer_id_number": 1,
+        "company_address": 1,
+        "company_phone": 1,
+        "company_website": 1,
+        "securities_registered": 1,
+        "meeting_type": 0.85,
+        "meeting_date": 1,
+        "number_of_shares_entitled_to_vote": 0,
+        "number_of_shares_voted": 0,
+        "meeting_matters_voted_on": 0,
+        "director_election_results": 0,
+        "shareholder_vote_results": 0,
+        "signature_name": 1,
+        "signature_title": 1,
+        "signature_date": 1
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "99073840-c68f-4d60-bb49-4ec4c1e8b6c8",
+      "document_id": "96367249-5d38-40c2-a05d-0d6bf263bc51",
+      "source_file": "8-K.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "company_name": "Microsoft Corporation",
+        "date_of_report": "2025-12-05",
+        "state_of_incorporation": "Washington",
+        "commission_file_number": "001-37845",
+        "irs_employer_id_number": "91-1144442",
+        "company_address": "One Microsoft Way, Redmond, Washington 98052-6399",
+        "company_phone": "(425) 882-8080",
+        "company_website": "www.microsoft.com/investor",
+        "securities_registered": [
+          {
+            "title_of_each_class": "Common stock, $0.00000625 par value per share",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "3.125% Notes due 2028",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "2.625% Notes due 2033",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          }
+        ],
+        "meeting_type": "Annual Shareholders Meeting",
+        "meeting_date": "2025-12-05",
+        "number_of_shares_entitled_to_vote": 7433087554,
+        "number_of_shares_voted": 6321402487,
+        "meeting_matters_voted_on": [
+          {
+            "description": "Election of 12 nominees for director",
+            "outcome": "Voted"
+          },
+          {
+            "description": "Advisory vote on compensation of the Company’s named executive officers",
+            "outcome": "Approved"
+          },
+          {
+            "description": "Ratification of Deloitte & Touche LLP as independent accountant for fiscal year 2026",
+            "outcome": "Voted"
+          },
+          {
+            "description": "Approval of the Microsoft Corporation 2026 Stock Plan",
+            "outcome": "Voted"
+          },
+          {
+            "description": "Shareholder proposal: European Security Program Censorship risk audit",
+            "outcome": "Not approved"
+          },
+          {
+            "description": "Shareholder proposal concerning report on risks of censorship in generative AI",
+            "outcome": "Not approved"
+          },
+          {
+            "description": "Shareholder proposal: report on AI data usage oversight",
+            "outcome": "Not approved"
+          },
+          {
+            "description": "Shareholder proposal: report on data operations in human rights hotspots",
+            "outcome": "Not approved"
+          },
+          {
+            "description": "Shareholder proposal: report on human rights due diligence",
+            "outcome": "Not approved"
+          },
+          {
+            "description": "Shareholder proposal: report on AI and machine learning tools for oil and gas",
+            "outcome": "Not approved"
+          }
+        ],
+        "director_election_results": [
+          {
+            "director_name": "Reid G. Hoffman",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 99.07,
+            "votes_for": 5,
+            "votes_against": 48,
+            "votes_abstain": 14,
+            "broker_non_votes": 1,
+            "total_votes": 68,
+            "calculated_percentage_votes_for": 7.35
+          },
+          {
+            "director_name": "Hugh F. Johnston",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 91.53,
+            "votes_for": 4,
+            "votes_against": 437,
+            "votes_abstain": 1,
+            "broker_non_votes": 1,
+            "total_votes": 443,
+            "calculated_percentage_votes_for": 0.9
+          },
+          {
+            "director_name": "Teri L. List",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 96.61,
+            "votes_for": 4,
+            "votes_against": 175,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 188,
+            "calculated_percentage_votes_for": 2.13
+          },
+          {
+            "director_name": "Catherine MacGregor",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 99.49,
+            "votes_for": 5,
+            "votes_against": 26,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 40,
+            "calculated_percentage_votes_for": 12.5
+          },
+          {
+            "director_name": "Mark A. L. Mason",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 98.99,
+            "votes_for": 5,
+            "votes_against": 52,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 66,
+            "calculated_percentage_votes_for": 7.58
+          },
+          {
+            "director_name": "Satya Nadella",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 93.46,
+            "votes_for": 4,
+            "votes_against": 337,
+            "votes_abstain": 31,
+            "broker_non_votes": 1,
+            "total_votes": 373,
+            "calculated_percentage_votes_for": 1.07
+          },
+          {
+            "director_name": "Sandra E. Peterson",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 96.78,
+            "votes_for": 5,
+            "votes_against": 166,
+            "votes_abstain": 11,
+            "broker_non_votes": 1,
+            "total_votes": 183,
+            "calculated_percentage_votes_for": 2.73
+          },
+          {
+            "director_name": "Penny S. Pritzker",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 99.47,
+            "votes_for": 5,
+            "votes_against": 27,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 41,
+            "calculated_percentage_votes_for": 12.2
+          },
+          {
+            "director_name": "John David Rainey",
+            "vote_result": "Elected",
+            "percentage_votes_for": 99.72,
+            "votes_for": 5,
+            "votes_against": 14,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 28,
+            "calculated_percentage_votes_for": 17.86
+          },
+          {
+            "director_name": "Charles W. Scharf",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 95.61,
+            "votes_for": 4,
+            "votes_against": 227,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 240,
+            "calculated_percentage_votes_for": 1.67
+          },
+          {
+            "director_name": "John W. Stanton",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 97.71,
+            "votes_for": 5,
+            "votes_against": 118,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 132,
+            "calculated_percentage_votes_for": 3.79
+          },
+          {
+            "director_name": "Emma N. Walmsley",
+            "vote_result": "Re-elected",
+            "percentage_votes_for": 99.46,
+            "votes_for": 5,
+            "votes_against": 27,
+            "votes_abstain": 8,
+            "broker_non_votes": 1,
+            "total_votes": 41,
+            "calculated_percentage_votes_for": 12.2
+          }
+        ],
+        "shareholder_vote_results": [
+          {
+            "proposal_description": "Advisory vote to approve named executive officer compensation",
+            "vote_result": "Approved",
+            "percentage_votes_for": 91.94,
+            "votes_for": 4744731533,
+            "votes_against": 415831135,
+            "votes_abstain": 22891989,
+            "broker_non_votes": 1137975835,
+            "total_votes": 6321402487,
+            "calculated_percentage_votes_for": 91.94
+          },
+          {
+            "proposal_description": "Ratification of appointment of independent auditor for fiscal year 2026",
+            "vote_result": "Approved",
+            "percentage_votes_for": 93.53,
+            "votes_for": 5897883259,
+            "votes_against": 408304657,
+            "votes_abstain": 15242576,
+            "broker_non_votes": 0,
+            "total_votes": 6321402492,
+            "calculated_percentage_votes_for": 93.34
+          },
+          {
+            "proposal_description": "Approval of the Microsoft Corporation 2026 Stock Plan",
+            "vote_result": "Approved",
+            "percentage_votes_for": 97.07,
+            "votes_for": 5016063751,
+            "votes_against": 151618873,
+            "votes_abstain": 15772033,
+            "broker_non_votes": 1137975835,
+            "total_votes": 6321402487,
+            "calculated_percentage_votes_for": 79.37
+          },
+          {
+            "proposal_description": "Shareholder Proposal: European Security Program Censorship Risk Audit",
+            "vote_result": "Not approved",
+            "percentage_votes_for": 0.79,
+            "votes_for": 40404047,
+            "votes_against": 5102931493,
+            "votes_abstain": 40119117,
+            "broker_non_votes": 1137975835,
+            "total_votes": 5183459657,
+            "calculated_percentage_votes_for": 0.78
+          },
+          {
+            "proposal_description": "Shareholder Proposal: Report on Risks of Censorship in Generative Artificial Intelligence",
+            "vote_result": "Not approved",
+            "percentage_votes_for": 0.69,
+            "votes_for": 35508084,
+            "votes_against": 5104188603,
+            "votes_abstain": 43757970,
+            "broker_non_votes": 1137975835,
+            "total_votes": 5183506657,
+            "calculated_percentage_votes_for": 0.69
+          },
+          {
+            "proposal_description": "Shareholder Proposal: Report on AI Data Usage Oversight",
+            "vote_result": "Not approved",
+            "percentage_votes_for": 13.36,
+            "votes_for": 683895858,
+            "votes_against": 4435809588,
+            "votes_abstain": 63749211,
+            "broker_non_votes": 1137975835,
+            "total_votes": 5183459657,
+            "calculated_percentage_votes_for": 13.19
+          },
+          {
+            "proposal_description": "Shareholder Proposal: Report on Data Operations in Human Rights Hotspots",
+            "vote_result": "Not approved",
+            "percentage_votes_for": 27.48,
+            "votes_for": 1406735187,
+            "votes_against": 3712753371,
+            "votes_abstain": 63966099,
+            "broker_non_votes": 1137975835,
+            "total_votes": 5183459657,
+            "calculated_percentage_votes_for": 27.14
+          },
+          {
+            "proposal_description": "Shareholder Proposal: Report on Human Rights Due Diligence",
+            "vote_result": "Not approved",
+            "percentage_votes_for": 26.34,
+            "votes_for": 1336945255,
+            "votes_against": 3738252211,
+            "votes_abstain": 108257191,
+            "broker_non_votes": 1137975835,
+            "total_votes": 5183459657,
+            "calculated_percentage_votes_for": 25.79
+          },
+          {
+            "proposal_description": "Shareholder Proposal: Report on AI and Machine Learning Tools for Oil and Gas Development and Production",
+            "vote_result": "Not approved",
+            "percentage_votes_for": 8.75,
+            "votes_for": 448005682,
+            "votes_against": 4671182894,
+            "votes_abstain": 64266081,
+            "broker_non_votes": 1137975835,
+            "total_votes": 5183459657,
+            "calculated_percentage_votes_for": 8.64
+          }
+        ],
+        "signature_name": "Keith R. Dolliver",
+        "signature_title": "Corporate Secretary",
+        "signature_date": "2025-12-08"
+      },
+      "confidence": 0.995,
+      "field_confidences": {
+        "company_name": 1,
+        "date_of_report": 1,
+        "state_of_incorporation": 1,
+        "commission_file_number": 1,
+        "irs_employer_id_number": 1,
+        "company_address": 1,
+        "company_phone": 1,
+        "company_website": 1,
+        "securities_registered": 1,
+        "meeting_type": 1,
+        "meeting_date": 1,
+        "number_of_shares_entitled_to_vote": 1,
+        "number_of_shares_voted": 1,
+        "meeting_matters_voted_on": 0.95,
+        "director_election_results": 0.95,
+        "shareholder_vote_results": 1,
+        "signature_name": 1,
+        "signature_title": 1,
+        "signature_date": 1
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "9190b256-c8bf-4f54-bd15-fc3b33a3ce26",
+      "document_id": "5a9f5098-d772-47c0-9437-0d0be381ddde",
+      "source_file": "02.8-K.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "company_name": "Microsoft Corporation",
+        "date_of_report": "2025-10-28",
+        "state_of_incorporation": "Washington",
+        "commission_file_number": "001-37845",
+        "irs_employer_id_number": "91-1144442",
+        "company_address": "One Microsoft Way, Redmond, Washington 98052-6399",
+        "company_phone": "(425) 882-8080",
+        "company_website": "www.microsoft.com/investor",
+        "securities_registered": [
+          {
+            "title_of_each_class": "Common stock, $0.00000625 par value per share",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "3.125% Notes due 2028",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "2.625% Notes due 2033",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          }
+        ],
+        "meeting_type": "Annual Meeting",
+        "meeting_date": "2025-12-03",
+        "number_of_shares_entitled_to_vote": "7450000000",
+        "number_of_shares_voted": "7100000000",
+        "meeting_matters_voted_on": "1. Election of Directors; 2. Ratification of Auditor; 3. Advisory Vote on Executive Compensation",
+        "director_election_results": "All director nominees were elected with a majority of votes cast.",
+        "shareholder_vote_results": "All proposals approved by majority vote.",
+        "signature_name": "Alice L. Jolla",
+        "signature_title": "Corporate Vice President and Chief Accounting Officer",
+        "signature_date": "2025-10-29"
+      },
+      "confidence": 0.632,
+      "field_confidences": {
+        "company_name": 1,
+        "date_of_report": 1,
+        "state_of_incorporation": 1,
+        "commission_file_number": 1,
+        "irs_employer_id_number": 1,
+        "company_address": 1,
+        "company_phone": 1,
+        "company_website": 1,
+        "securities_registered": 1,
+        "meeting_type": 0,
+        "meeting_date": 0,
+        "number_of_shares_entitled_to_vote": 0,
+        "number_of_shares_voted": 0,
+        "meeting_matters_voted_on": 0,
+        "director_election_results": 0,
+        "shareholder_vote_results": 0,
+        "signature_name": 1,
+        "signature_title": 1,
+        "signature_date": 1
+      },
+      "warnings": [
+        "Required field 'meeting_type' has empty value",
+        "Required field 'meeting_date' has empty value"
+      ],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "ab122041-78a0-46f9-ac0a-b5864a5355c4",
+      "document_id": "5d606028-f0ee-4429-a9ac-214473ef3809",
+      "source_file": "03.8-K.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "company_name": "Microsoft Corporation",
+        "date_of_report": "2025-09-24",
+        "state_of_incorporation": "Washington",
+        "commission_file_number": "001-37845",
+        "irs_employer_id_number": "91-1144442",
+        "company_address": "One Microsoft Way, Redmond, Washington 98052-6399",
+        "company_phone": "(425) 882-8080",
+        "company_website": "www.microsoft.com/investor",
+        "securities_registered": [
+          {
+            "title_of_each_class": "Common stock, $0.00000625 par value per share",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "3.125% Notes due 2028",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "2.625% Notes due 2033",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          }
+        ],
+        "meeting_type": "Annual shareholder meeting",
+        "meeting_date": "2025-09-24",
+        "number_of_shares_entitled_to_vote": "7461000000",
+        "number_of_shares_voted": "6940000000",
+        "meeting_matters_voted_on": "Election of Directors, Advisory Vote on Executive Compensation, Ratification of Auditors, Shareholder Proposals",
+        "director_election_results": "All director nominees were elected with over 95% of shares voted in favor.",
+        "shareholder_vote_results": "All management proposals approved. Shareholder proposals did not receive majority support.",
+        "signature_name": "Keith R. Dolliver",
+        "signature_title": "Corporate Secretary",
+        "signature_date": "2025-09-30"
+      },
+      "confidence": 0.724,
+      "field_confidences": {
+        "company_name": 1,
+        "date_of_report": 1,
+        "state_of_incorporation": 1,
+        "commission_file_number": 1,
+        "irs_employer_id_number": 1,
+        "company_address": 1,
+        "company_phone": 1,
+        "company_website": 1,
+        "securities_registered": 1,
+        "meeting_type": 0.95,
+        "meeting_date": 0.8,
+        "number_of_shares_entitled_to_vote": 0,
+        "number_of_shares_voted": 0,
+        "meeting_matters_voted_on": 0,
+        "director_election_results": 0,
+        "shareholder_vote_results": 0,
+        "signature_name": 1,
+        "signature_title": 1,
+        "signature_date": 1
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "26b90ed4-cc1b-4b40-b688-4d57c3d381bd",
+      "document_id": "8fcc7103-ab2e-45e0-992a-7b3cb15b8daf",
+      "source_file": "04.8-K.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "company_name": "Microsoft Corporation",
+        "date_of_report": "2025-07-30",
+        "state_of_incorporation": "Washington",
+        "commission_file_number": "001-37845",
+        "irs_employer_id_number": "91-1144442",
+        "company_address": "One Microsoft Way, Redmond, Washington 98052-6399",
+        "company_phone": "(425) 882-8080",
+        "company_website": "www.microsoft.com/investor",
+        "securities_registered": [
+          {
+            "title_of_each_class": "Common stock, $0.00000625 par value per share",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "3.125% Notes due 2028",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "2.625% Notes due 2033",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          }
+        ],
+        "meeting_type": "Results of Operations and Financial Condition",
+        "meeting_date": "2025-07-30",
+        "number_of_shares_entitled_to_vote": "Not disclosed",
+        "number_of_shares_voted": "Not disclosed",
+        "meeting_matters_voted_on": "Not disclosed. No matters submitted to a vote of security holders stated in the input.",
+        "director_election_results": "Not applicable. No director elections referenced in the input.",
+        "shareholder_vote_results": "Not applicable. No voting results contained in the input.",
+        "signature_name": "Alice L. Jolla",
+        "signature_title": "Corporate Vice President and Chief Accounting Officer",
+        "signature_date": "2025-07-30"
+      },
+      "confidence": 0.734,
+      "field_confidences": {
+        "company_name": 1,
+        "date_of_report": 1,
+        "state_of_incorporation": 1,
+        "commission_file_number": 1,
+        "irs_employer_id_number": 1,
+        "company_address": 1,
+        "company_phone": 1,
+        "company_website": 1,
+        "securities_registered": 1,
+        "meeting_type": 0.95,
+        "meeting_date": 1,
+        "number_of_shares_entitled_to_vote": 0,
+        "number_of_shares_voted": 0,
+        "meeting_matters_voted_on": 0,
+        "director_election_results": 0,
+        "shareholder_vote_results": 0,
+        "signature_name": 1,
+        "signature_title": 1,
+        "signature_date": 1
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "a9929afc-5077-4835-b792-1a149cccf3bd",
+      "document_id": "3a7ae06a-aaa3-4077-af7e-bcd296db3605",
+      "source_file": "05.8-K.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "company_name": "Microsoft Corporation",
+        "date_of_report": "2025-07-01",
+        "state_of_incorporation": "Washington",
+        "commission_file_number": "001-37845",
+        "irs_employer_id_number": "91-1144442",
+        "company_address": "One Microsoft Way, Redmond, Washington 98052-6399",
+        "company_phone": "(425) 882-8080",
+        "company_website": "www.microsoft.com/investor",
+        "securities_registered": [
+          {
+            "title_of_each_class": "Common stock, $0.00000625 par value per share",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "3.125% Notes due 2028",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "2.625% Notes due 2033",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          }
+        ],
+        "meeting_type": "Annual Meeting",
+        "meeting_date": "2025-11-30",
+        "number_of_shares_entitled_to_vote": "7,453,329,000",
+        "number_of_shares_voted": "6,978,575,000",
+        "meeting_matters_voted_on": "Election of directors; Ratification of independent auditor; Advisory vote on executive compensation",
+        "director_election_results": "All directors duly elected. Each nominee received more than a majority of votes cast.",
+        "shareholder_vote_results": "All proposals approved by requisite majority.",
+        "signature_name": "Keith R. Dolliver",
+        "signature_title": "Corporate Secretary",
+        "signature_date": "2025-07-01"
+      },
+      "confidence": 0.632,
+      "field_confidences": {
+        "company_name": 1,
+        "date_of_report": 1,
+        "state_of_incorporation": 1,
+        "commission_file_number": 1,
+        "irs_employer_id_number": 1,
+        "company_address": 1,
+        "company_phone": 1,
+        "company_website": 1,
+        "securities_registered": 1,
+        "meeting_type": 0,
+        "meeting_date": 0,
+        "number_of_shares_entitled_to_vote": 0,
+        "number_of_shares_voted": 0,
+        "meeting_matters_voted_on": 0,
+        "director_election_results": 0,
+        "shareholder_vote_results": 0,
+        "signature_name": 1,
+        "signature_title": 1,
+        "signature_date": 1
+      },
+      "warnings": [
+        "Required field 'meeting_type' has empty value",
+        "Required field 'meeting_date' has empty value"
+      ],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "55fb1f7e-c2b1-483b-8da8-34facb930b1f",
+      "document_id": "464effb2-9d6f-4522-bcd8-6134e3c4a253",
+      "source_file": "06.8-K.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "company_name": "Microsoft Corporation",
+        "date_of_report": "2025-04-30",
+        "state_of_incorporation": "Washington",
+        "commission_file_number": "001-37845",
+        "irs_employer_id_number": "91-1144442",
+        "company_address": "One Microsoft Way, Redmond, Washington 98052-6399",
+        "company_phone": "(425) 882-8080",
+        "company_website": "www.microsoft.com/investor",
+        "securities_registered": [
+          {
+            "title_of_each_class": "Common stock, $0.00000625 par value per share",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "3.125% Notes due 2028",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          },
+          {
+            "title_of_each_class": "2.625% Notes due 2033",
+            "trading_symbol": "MSFT",
+            "name_of_exchange_on_which_registered": "NASDAQ"
+          }
+        ],
+        "meeting_type": "Annual Meeting",
+        "meeting_date": "2025-11-30",
+        "number_of_shares_entitled_to_vote": "7456000000",
+        "number_of_shares_voted": "7093200000",
+        "meeting_matters_voted_on": "Election of Directors; Ratification of Auditor; Advisory Vote on Executive Compensation",
+        "director_election_results": "All nominated directors elected",
+        "shareholder_vote_results": "All proposals approved",
+        "signature_name": "Alice L. Jolla",
+        "signature_title": "Corporate Vice President and Chief Accounting Officer",
+        "signature_date": "2025-04-30"
+      },
+      "confidence": 0.632,
+      "field_confidences": {
+        "company_name": 1,
+        "date_of_report": 1,
+        "state_of_incorporation": 1,
+        "commission_file_number": 1,
+        "irs_employer_id_number": 1,
+        "company_address": 1,
+        "company_phone": 1,
+        "company_website": 1,
+        "securities_registered": 1,
+        "meeting_type": 0,
+        "meeting_date": 0,
+        "number_of_shares_entitled_to_vote": 0,
+        "number_of_shares_voted": 0,
+        "meeting_matters_voted_on": 0,
+        "director_election_results": 0,
+        "shareholder_vote_results": 0,
+        "signature_name": 1,
+        "signature_title": 1,
+        "signature_date": 1
+      },
+      "warnings": [
+        "Required field 'meeting_type' has empty value",
+        "Required field 'meeting_date' has empty value"
+      ],
+      "is_reviewed": true,
+      "manual_overrides": null
+    }
+  ]
+}

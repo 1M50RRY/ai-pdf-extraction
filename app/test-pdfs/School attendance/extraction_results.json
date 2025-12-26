@@ -1,0 +1,2233 @@
+{
+  "schema": {
+    "name": "Student Attendance Fact Sheet Schema",
+    "description": "The document is clearly a government-issued statistical and informational fact sheet, as indicated by the consistent branding, use of data tables, explanatory notes, and visual representations (charts and tables) regarding student attendance in NSW public schools for Semester 1, 2024. Pages include statistical breakdowns by Aboriginal status, education level, and geolocation, with definitions and methodology outlined in the notes.",
+    "fields": [
+      {
+        "name": "report_year",
+        "type": "string",
+        "description": "Year or semester for which the student attendance data is reported (e.g., 2024 Semester 1).",
+        "required": true
+      },
+      {
+        "name": "attendance_rate_definition",
+        "type": "string",
+        "description": "The official definition/explanation of attendance rate as stated in the document.",
+        "required": false
+      },
+      {
+        "name": "attendance_level_definition",
+        "type": "string",
+        "description": "The official definition/explanation of attendance level as stated in the document.",
+        "required": false
+      },
+      {
+        "name": "aboriginal_and_torres_strait_islander_definition",
+        "type": "string",
+        "description": "Definition of who is included under Aboriginal and/or Torres Strait Islander classification for this report.",
+        "required": false
+      },
+      {
+        "name": "attendance_by_subgroup",
+        "type": "array",
+        "description": "List of subgroup attendance metrics, split by subgroup and year, containing: education_level, year, attendance_rate, attendance_level, change_in_attendance_rate, change_in_attendance_level. Example subgroups: K–2, 3–6, 7–10, 11–12, Primary, Secondary, All.",
+        "required": false
+      },
+      {
+        "name": "attendance_by_geolocation_and_year",
+        "type": "array",
+        "description": "List of attendance level percentages by NSW geolocation (major cities, regional, remote), student type (primary/secondary), and year, containing: student_type, geolocation, year, attendance_level_percentage, change_in_percentage_points.",
+        "required": false
+      },
+      {
+        "name": "attendance_calculation_methodology",
+        "type": "string",
+        "description": "Summary or citation of the methodology used for attendance calculations, including key changes or standards referenced.",
+        "required": false
+      },
+      {
+        "name": "reasons_for_absences",
+        "type": "array",
+        "description": "List of possible or recognized reasons for student absences, as outlined in explanatory notes.",
+        "required": false
+      },
+      {
+        "name": "notes",
+        "type": "string",
+        "description": "General notes on how data was collected, definitions, and special considerations such as COVID-19 impacts or inclusion/exclusion of particular year groups.",
+        "required": false
+      }
+    ],
+    "version": "1.0",
+    "validation_rules": []
+  },
+  "batch_id": "e3564af1-63b5-4ac8-82de-58c60ca42803",
+  "exported_at": "2025-12-26T13:26:50.354Z",
+  "total_documents": 5,
+  "average_confidence": 0.6344,
+  "results": [
+    {
+      "id": "921d7cca-26a6-433b-b733-e53c6008183d",
+      "document_id": "5ad97575-4abd-48e9-8e7a-3b73382bc228",
+      "source_file": "2024-government-school-attendance-fact-sheet.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "report_year": "2024 Semester 1",
+        "attendance_rate_definition": "The attendance rate is the percentage of days students attended school, compared to student enrolled days.",
+        "attendance_level_definition": "The attendance level is the proportion of students attending 90% or more of the time.",
+        "aboriginal_and_torres_strait_islander_definition": "Throughout this report, the term ‘Aboriginal’ is inclusive of Aboriginal and/or Torres Strait Islander students.",
+        "attendance_by_subgroup": [
+          {
+            "education_level": "K–2",
+            "year": "2023",
+            "attendance_rate": "90.8",
+            "attendance_level": "68.0",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "K–2",
+            "year": "2024",
+            "attendance_rate": "90.5",
+            "attendance_level": "65.3",
+            "change_in_attendance_rate": "-0.3",
+            "change_in_attendance_level": "-2.7"
+          },
+          {
+            "education_level": "3–6",
+            "year": "2023",
+            "attendance_rate": "90.3",
+            "attendance_level": "65.8",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "3–6",
+            "year": "2024",
+            "attendance_rate": "89.7",
+            "attendance_level": "61.1",
+            "change_in_attendance_rate": "-0.6",
+            "change_in_attendance_level": "-4.7"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2023",
+            "attendance_rate": "90.5",
+            "attendance_level": "66.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2024",
+            "attendance_rate": "90.0",
+            "attendance_level": "62.8",
+            "change_in_attendance_rate": "-0.5",
+            "change_in_attendance_level": "-3.9"
+          },
+          {
+            "education_level": "7–10",
+            "year": "2023",
+            "attendance_rate": "83.9",
+            "attendance_level": "48.2",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "7–10",
+            "year": "2024",
+            "attendance_rate": "83.2",
+            "attendance_level": "44.5",
+            "change_in_attendance_rate": "-0.7",
+            "change_in_attendance_level": "-3.7"
+          },
+          {
+            "education_level": "11–12",
+            "year": "2023",
+            "attendance_rate": "83.4",
+            "attendance_level": "50.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "11–12",
+            "year": "2024",
+            "attendance_rate": "83.2",
+            "attendance_level": "47.9",
+            "change_in_attendance_rate": "-0.2",
+            "change_in_attendance_level": "-2.8"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2023",
+            "attendance_rate": "83.8",
+            "attendance_level": "48.9",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2024",
+            "attendance_rate": "83.2",
+            "attendance_level": "45.5",
+            "change_in_attendance_rate": "-0.6",
+            "change_in_attendance_level": "-3.4"
+          },
+          {
+            "education_level": "All",
+            "year": "2023",
+            "attendance_rate": "87.8",
+            "attendance_level": "59.6",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2024",
+            "attendance_rate": "87.3",
+            "attendance_level": "55.8",
+            "change_in_attendance_rate": "-0.5",
+            "change_in_attendance_level": "-3.8"
+          },
+          {
+            "education_level": "K–2",
+            "year": "2023",
+            "attendance_rate": "85.9",
+            "attendance_level": "49.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "K–2",
+            "year": "2024",
+            "attendance_rate": "85.2",
+            "attendance_level": "46.6",
+            "change_in_attendance_rate": "-0.7",
+            "change_in_attendance_level": "-3.1"
+          },
+          {
+            "education_level": "3–6",
+            "year": "2023",
+            "attendance_rate": "84.9",
+            "attendance_level": "46.5",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "3–6",
+            "year": "2024",
+            "attendance_rate": "83.9",
+            "attendance_level": "41.9",
+            "change_in_attendance_rate": "-1.0",
+            "change_in_attendance_level": "-4.6"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2023",
+            "attendance_rate": "85.3",
+            "attendance_level": "47.8",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2024",
+            "attendance_rate": "84.4",
+            "attendance_level": "43.9",
+            "change_in_attendance_rate": "-0.9",
+            "change_in_attendance_level": "-3.9"
+          },
+          {
+            "education_level": "7–10",
+            "year": "2023",
+            "attendance_rate": "70.6",
+            "attendance_level": "24.3",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "7–10",
+            "year": "2024",
+            "attendance_rate": "69.5",
+            "attendance_level": "21.6",
+            "change_in_attendance_rate": "-1.1",
+            "change_in_attendance_level": "-2.7"
+          },
+          {
+            "education_level": "11–12",
+            "year": "2023",
+            "attendance_rate": "66.0",
+            "attendance_level": "24.4",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "11–12",
+            "year": "2024",
+            "attendance_rate": "66.4",
+            "attendance_level": "21.7",
+            "change_in_attendance_rate": "0.4",
+            "change_in_attendance_level": "-2.7"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2023",
+            "attendance_rate": "69.6",
+            "attendance_level": "24.3",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2024",
+            "attendance_rate": "68.8",
+            "attendance_level": "21.6",
+            "change_in_attendance_rate": "-0.8",
+            "change_in_attendance_level": "-2.7"
+          },
+          {
+            "education_level": "All",
+            "year": "2023",
+            "attendance_rate": "79.1",
+            "attendance_level": "38.5",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2024",
+            "attendance_rate": "78.2",
+            "attendance_level": "35.0",
+            "change_in_attendance_rate": "-0.9",
+            "change_in_attendance_level": "-3.5"
+          },
+          {
+            "education_level": "K–2",
+            "year": "2023",
+            "attendance_rate": "91.3",
+            "attendance_level": "69.9",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "K–2",
+            "year": "2024",
+            "attendance_rate": "91.1",
+            "attendance_level": "67.3",
+            "change_in_attendance_rate": "-0.2",
+            "change_in_attendance_level": "-2.6"
+          },
+          {
+            "education_level": "3–6",
+            "year": "2023",
+            "attendance_rate": "90.9",
+            "attendance_level": "67.8",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "3–6",
+            "year": "2024",
+            "attendance_rate": "90.3",
+            "attendance_level": "63.1",
+            "change_in_attendance_rate": "-0.6",
+            "change_in_attendance_level": "-4.7"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2023",
+            "attendance_rate": "91.1",
+            "attendance_level": "68.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2024",
+            "attendance_rate": "90.6",
+            "attendance_level": "64.9",
+            "change_in_attendance_rate": "-0.5",
+            "change_in_attendance_level": "-3.8"
+          },
+          {
+            "education_level": "7–10",
+            "year": "2023",
+            "attendance_rate": "85.4",
+            "attendance_level": "50.9",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "7–10",
+            "year": "2024",
+            "attendance_rate": "84.9",
+            "attendance_level": "47.2",
+            "change_in_attendance_rate": "-0.5",
+            "change_in_attendance_level": "-3.7"
+          },
+          {
+            "education_level": "11–12",
+            "year": "2023",
+            "attendance_rate": "84.8",
+            "attendance_level": "52.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "11–12",
+            "year": "2024",
+            "attendance_rate": "84.5",
+            "attendance_level": "50.0",
+            "change_in_attendance_rate": "-0.3",
+            "change_in_attendance_level": "-2.7"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2023",
+            "attendance_rate": "85.3",
+            "attendance_level": "51.5",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2024",
+            "attendance_rate": "84.8",
+            "attendance_level": "48.0",
+            "change_in_attendance_rate": "-0.5",
+            "change_in_attendance_level": "-3.5"
+          },
+          {
+            "education_level": "All",
+            "year": "2023",
+            "attendance_rate": "88.7",
+            "attendance_level": "61.8",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2024",
+            "attendance_rate": "88.3",
+            "attendance_level": "58.1",
+            "change_in_attendance_rate": "-0.4",
+            "change_in_attendance_level": "-3.7"
+          }
+        ],
+        "attendance_by_geolocation_and_year": [
+          {
+            "student_type": null,
+            "geolocation": "Major cities",
+            "year": "2023",
+            "attendance_level_percentage": "62.5",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": null,
+            "geolocation": "Major cities",
+            "year": "2024",
+            "attendance_level_percentage": "58.6",
+            "change_in_percentage_points": "-3.9"
+          },
+          {
+            "student_type": null,
+            "geolocation": "Regional",
+            "year": "2023",
+            "attendance_level_percentage": "50.6",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": null,
+            "geolocation": "Regional",
+            "year": "2024",
+            "attendance_level_percentage": "47.3",
+            "change_in_percentage_points": "-3.3"
+          },
+          {
+            "student_type": null,
+            "geolocation": "Remote",
+            "year": "2023",
+            "attendance_level_percentage": "36.5",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": null,
+            "geolocation": "Remote",
+            "year": "2024",
+            "attendance_level_percentage": "31.5",
+            "change_in_percentage_points": "-5.0"
+          },
+          {
+            "student_type": null,
+            "geolocation": "All",
+            "year": "2023",
+            "attendance_level_percentage": "59.6",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": null,
+            "geolocation": "All",
+            "year": "2024",
+            "attendance_level_percentage": "55.8",
+            "change_in_percentage_points": "-3.8"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Major cities",
+            "year": "2023",
+            "attendance_level_percentage": "52.8",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Major cities",
+            "year": "2024",
+            "attendance_level_percentage": "49.3",
+            "change_in_percentage_points": "-3.5"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Regional",
+            "year": "2023",
+            "attendance_level_percentage": "36.5",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Regional",
+            "year": "2024",
+            "attendance_level_percentage": "33.1",
+            "change_in_percentage_points": "-3.4"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Remote",
+            "year": "2023",
+            "attendance_level_percentage": "26.7",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Remote",
+            "year": "2024",
+            "attendance_level_percentage": "21.8",
+            "change_in_percentage_points": "-4.9"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2023",
+            "attendance_level_percentage": "68.9",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2024",
+            "attendance_level_percentage": "64.9",
+            "change_in_percentage_points": "-4.0"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2023",
+            "attendance_level_percentage": "59.9",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2024",
+            "attendance_level_percentage": "56.6",
+            "change_in_percentage_points": "-3.3"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2023",
+            "attendance_level_percentage": "43.5",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2024",
+            "attendance_level_percentage": "38.4",
+            "change_in_percentage_points": "-5.1"
+          }
+        ],
+        "attendance_calculation_methodology": "The attendance calculation methodology was revised in 2020 to align with the third edition of ACARA’s ‘National standards for student attendance data and reporting’. The nationally published My School figures include data for students in Year 1 to Year 10; this fact sheet includes Kindergarten, Year 11, and Year 12.",
+        "reasons_for_absences": [
+          "Leave",
+          "Sick",
+          "Other",
+          "Unexplained / pending explanation",
+          "Unjustified explanation received",
+          "misadventure or unforeseen event",
+          "participation in special events not related to the school",
+          "domestic necessity, such as serious illness of an immediate family member",
+          "attendance at funerals",
+          "travel in Australia and overseas",
+          "recognised religious festivals or ceremonial occasions",
+          "other absences not explained by parents, or the principal does not accept the provided explanation",
+          "Aboriginal and/or Torres Strait Islander students may also be absent from school when they are engaging in cultural practices/obligations"
+        ],
+        "notes": "Attendance data covers Kindergarten to Year 12 in Semester 1, 2024. No COVID-19 lockdowns occurred, but COVID-19 and general illness caused large variability in attendance. Figures differ from nationally published data due to broader included year levels and the revised attendance methodology (since 2020). 2020 figures are excluded due to the impact of COVID-19."
+      },
+      "confidence": 0.661,
+      "field_confidences": {
+        "report_year": 1,
+        "attendance_rate_definition": 0.5,
+        "attendance_level_definition": 0.5,
+        "aboriginal_and_torres_strait_islander_definition": 0.75,
+        "attendance_by_subgroup": 0.5,
+        "attendance_by_geolocation_and_year": 0.4925,
+        "attendance_calculation_methodology": 0.725,
+        "reasons_for_absences": 0.5,
+        "notes": 0.975
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "bab5893d-11a6-45db-a907-48393ad39d35",
+      "document_id": "25fcbb3a-3c5c-4873-b3d6-f2250129ff43",
+      "source_file": "2023-government-school-attendance-fact-sheet.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "report_year": "2023 Semester 1",
+        "attendance_rate_definition": "The attendance rate is the percentage of days students attended school, compared to student enrolled days.",
+        "attendance_level_definition": "The attendance level is the proportion of students attending 90% or more of the time.",
+        "aboriginal_and_torres_strait_islander_definition": "Students are counted as Aboriginal and/or Torres Strait Islanders if they are identified as such on the school enrolment form. Throughout this fact sheet the term ‘Aboriginal’ is used to refer to Aboriginal and/or Torres Strait Islander students.",
+        "attendance_by_subgroup": [
+          {
+            "education_level": "K-2",
+            "year": "2022",
+            "attendance_rate": "87.7",
+            "attendance_level": "50.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "K-2",
+            "year": "2023",
+            "attendance_rate": "90.8",
+            "attendance_level": "68.0",
+            "change_in_attendance_rate": "3.1",
+            "change_in_attendance_level": "17.3"
+          },
+          {
+            "education_level": "3-6",
+            "year": "2022",
+            "attendance_rate": "87.0",
+            "attendance_level": "47.8",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "3-6",
+            "year": "2023",
+            "attendance_rate": "90.3",
+            "attendance_level": "65.8",
+            "change_in_attendance_rate": "3.3",
+            "change_in_attendance_level": "18.0"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2022",
+            "attendance_rate": "87.3",
+            "attendance_level": "49.0",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2023",
+            "attendance_rate": "90.5",
+            "attendance_level": "66.7",
+            "change_in_attendance_rate": "3.2",
+            "change_in_attendance_level": "17.7"
+          },
+          {
+            "education_level": "7-10",
+            "year": "2022",
+            "attendance_rate": "81.6",
+            "attendance_level": "36.4",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "7-10",
+            "year": "2023",
+            "attendance_rate": "83.9",
+            "attendance_level": "48.2",
+            "change_in_attendance_rate": "2.3",
+            "change_in_attendance_level": "11.8"
+          },
+          {
+            "education_level": "11-12",
+            "year": "2022",
+            "attendance_rate": "81.6",
+            "attendance_level": "41.2",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "11-12",
+            "year": "2023",
+            "attendance_rate": "83.4",
+            "attendance_level": "50.7",
+            "change_in_attendance_rate": "1.8",
+            "change_in_attendance_level": "9.5"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2022",
+            "attendance_rate": "81.6",
+            "attendance_level": "37.8",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2023",
+            "attendance_rate": "83.8",
+            "attendance_level": "48.9",
+            "change_in_attendance_rate": "2.2",
+            "change_in_attendance_level": "11.1"
+          },
+          {
+            "education_level": "All",
+            "year": "2022",
+            "attendance_rate": "85.0",
+            "attendance_level": "44.6",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2023",
+            "attendance_rate": "87.8",
+            "attendance_level": "59.6",
+            "change_in_attendance_rate": "2.8",
+            "change_in_attendance_level": "15.0"
+          },
+          {
+            "education_level": "K-2",
+            "year": "2022",
+            "attendance_rate": "82.0",
+            "attendance_level": "32.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "K-2",
+            "year": "2023",
+            "attendance_rate": "85.9",
+            "attendance_level": "49.7",
+            "change_in_attendance_rate": "3.9",
+            "change_in_attendance_level": "17.0"
+          },
+          {
+            "education_level": "3-6",
+            "year": "2022",
+            "attendance_rate": "80.8",
+            "attendance_level": "30.1",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "3-6",
+            "year": "2023",
+            "attendance_rate": "84.9",
+            "attendance_level": "46.5",
+            "change_in_attendance_rate": "4.1",
+            "change_in_attendance_level": "16.4"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2022",
+            "attendance_rate": "81.3",
+            "attendance_level": "31.2",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2023",
+            "attendance_rate": "85.3",
+            "attendance_level": "47.8",
+            "change_in_attendance_rate": "4.0",
+            "change_in_attendance_level": "16.6"
+          },
+          {
+            "education_level": "7-10",
+            "year": "2022",
+            "attendance_rate": "68.3",
+            "attendance_level": "16.6",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "7-10",
+            "year": "2023",
+            "attendance_rate": "70.6",
+            "attendance_level": "24.3",
+            "change_in_attendance_rate": "2.3",
+            "change_in_attendance_level": "7.7"
+          },
+          {
+            "education_level": "11-12",
+            "year": "2022",
+            "attendance_rate": "64.3",
+            "attendance_level": "17.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "11-12",
+            "year": "2023",
+            "attendance_rate": "66.0",
+            "attendance_level": "24.4",
+            "change_in_attendance_rate": "1.7",
+            "change_in_attendance_level": "6.7"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2022",
+            "attendance_rate": "67.4",
+            "attendance_level": "16.9",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2023",
+            "attendance_rate": "69.6",
+            "attendance_level": "24.3",
+            "change_in_attendance_rate": "2.2",
+            "change_in_attendance_level": "7.4"
+          },
+          {
+            "education_level": "All",
+            "year": "2022",
+            "attendance_rate": "75.7",
+            "attendance_level": "25.4",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2023",
+            "attendance_rate": "79.1",
+            "attendance_level": "38.5",
+            "change_in_attendance_rate": "3.4",
+            "change_in_attendance_level": "13.1"
+          }
+        ],
+        "attendance_by_geolocation_and_year": [
+          {
+            "student_type": "All",
+            "geolocation": "Major cities",
+            "year": "2022",
+            "attendance_level_percentage": "47.1",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Major cities",
+            "year": "2023",
+            "attendance_level_percentage": "62.5",
+            "change_in_percentage_points": "15.4"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Regional",
+            "year": "2022",
+            "attendance_level_percentage": "36.8",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Regional",
+            "year": "2023",
+            "attendance_level_percentage": "50.6",
+            "change_in_percentage_points": "13.8"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Remote",
+            "year": "2022",
+            "attendance_level_percentage": "25.6",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Remote",
+            "year": "2023",
+            "attendance_level_percentage": "36.5",
+            "change_in_percentage_points": "10.9"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "All",
+            "year": "2022",
+            "attendance_level_percentage": "44.6",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "All",
+            "year": "2023",
+            "attendance_level_percentage": "59.6",
+            "change_in_percentage_points": "15.0"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Major cities",
+            "year": "2022",
+            "attendance_level_percentage": "47.1%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Major cities",
+            "year": "2023",
+            "attendance_level_percentage": "62.5%",
+            "change_in_percentage_points": "15.4pp"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Regional",
+            "year": "2022",
+            "attendance_level_percentage": "36.8%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Regional",
+            "year": "2023",
+            "attendance_level_percentage": "50.6%",
+            "change_in_percentage_points": "13.8pp"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Remote",
+            "year": "2022",
+            "attendance_level_percentage": "25.6%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Remote",
+            "year": "2023",
+            "attendance_level_percentage": "36.5%",
+            "change_in_percentage_points": "10.9pp"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2022",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2023",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": "17.7pp"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2022",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2023",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": "17.2pp"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2022",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2023",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": "12.7pp"
+          }
+        ],
+        "attendance_calculation_methodology": "The attendance calculation methodology was revised in 2020 to align with the third edition of ACARA’s ‘National standards for student attendance data and reporting’, differing to the target calculation methodology developed in 2018. The nationally published My School figures include data for students in Year 1 to Year 10.",
+        "reasons_for_absences": [
+          "COVID-19",
+          "general illness",
+          "encouraged to remain at home if unwell",
+          "only attend school when symptom-free",
+          {
+            "reason": "Leave"
+          },
+          {
+            "reason": "Sick"
+          },
+          {
+            "reason": "Suspended"
+          },
+          {
+            "reason": "Unexplained / pending explanation"
+          },
+          {
+            "reason": "Unjustified explanation received"
+          },
+          "misadventure or unforeseen event",
+          "participation in special events not related to the school",
+          "domestic necessity, such as serious illness of an immediate family member",
+          "attendance at funerals",
+          "travel in Australia and overseas",
+          "recognised religious festivals or ceremonial occasions",
+          "other absences not explained by parents, or the principal does not accept the explanation offered for the absence"
+        ],
+        "notes": "Attendance rates and levels in this fact sheet are different to the nationally published My School figures due to the inclusion of Kindergarten, Year 11 and Year 12 students. Student attendance data for 2020 is excluded due to the impact of COVID-19. Absence reasons are analysed in this fact sheet to explain increases in student attendance. All students, staff and visitors were encouraged to only attend school when symptom-free."
+      },
+      "confidence": 0.605,
+      "field_confidences": {
+        "report_year": 1,
+        "attendance_rate_definition": 0.5,
+        "attendance_level_definition": 0.5,
+        "aboriginal_and_torres_strait_islander_definition": 0.25,
+        "attendance_by_subgroup": 0.495,
+        "attendance_by_geolocation_and_year": 0.4825,
+        "attendance_calculation_methodology": 0.75,
+        "reasons_for_absences": 0.725,
+        "notes": 0.7375
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "a7062c5e-2caa-407d-8024-d0666026f6fe",
+      "document_id": "bf501a2d-172f-4632-8e1f-84c10a458be7",
+      "source_file": "2019-attendance_bulletin.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "report_year": "2019 (semester 1)",
+        "attendance_rate_definition": "Attendance rate is the percentage of the total number of student school days attended, compared to the total number of possible student school days.",
+        "attendance_level_definition": "Attendance level refers to the proportion of students attending 90% or more of the time.",
+        "aboriginal_and_torres_strait_islander_definition": "8.0% of all students in NSW government schools identified as Aboriginal in 2019.",
+        "attendance_by_subgroup": [
+          {
+            "education_level": "Primary total",
+            "year": "2015",
+            "attendance_rate": "93.9",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary total",
+            "year": "2016",
+            "attendance_rate": "93.9",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary total",
+            "year": "2017",
+            "attendance_rate": "93.9",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary total",
+            "year": "2018",
+            "attendance_rate": "93.3",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary total",
+            "year": "2019",
+            "attendance_rate": "92.7",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary total",
+            "year": "2015",
+            "attendance_rate": "89.5",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary total",
+            "year": "2016",
+            "attendance_rate": "89.5",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary total",
+            "year": "2017",
+            "attendance_rate": "89.5",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary total",
+            "year": "2018",
+            "attendance_rate": "88.2",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary total",
+            "year": "2019",
+            "attendance_rate": "87.8",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Junior secondary",
+            "year": "2015",
+            "attendance_rate": "89.5",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Junior secondary",
+            "year": "2016",
+            "attendance_rate": "89.7",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Junior secondary",
+            "year": "2017",
+            "attendance_rate": "89.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Junior secondary",
+            "year": "2018",
+            "attendance_rate": "88.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Junior secondary",
+            "year": "2019",
+            "attendance_rate": "88.0",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Senior secondary",
+            "year": "2015",
+            "attendance_rate": "89.0",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Senior secondary",
+            "year": "2016",
+            "attendance_rate": "89.0",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Senior secondary",
+            "year": "2017",
+            "attendance_rate": "89.0",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Senior secondary",
+            "year": "2018",
+            "attendance_rate": "87.5",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Senior secondary",
+            "year": "2019",
+            "attendance_rate": "87.3",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "K–2",
+            "year": "2019 Semester 1",
+            "attendance_rate": "93.1",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 3",
+            "year": "2019 Semester 1",
+            "attendance_rate": "93.0",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 4",
+            "year": "2019 Semester 1",
+            "attendance_rate": "92.9",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 5",
+            "year": "2019 Semester 1",
+            "attendance_rate": "92.8",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 6",
+            "year": "2019 Semester 1",
+            "attendance_rate": "92.1",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 7",
+            "year": "2019 Semester 1",
+            "attendance_rate": "91.2",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 8",
+            "year": "2019 Semester 1",
+            "attendance_rate": "88.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 9",
+            "year": "2019 Semester 1",
+            "attendance_rate": "87.2",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 10",
+            "year": "2019 Semester 1",
+            "attendance_rate": "85.5",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 11",
+            "year": "2019 Semester 1",
+            "attendance_rate": "86.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Year 12",
+            "year": "2019 Semester 1",
+            "attendance_rate": "88.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          }
+        ],
+        "attendance_by_geolocation_and_year": [
+          {
+            "student_type": "All students",
+            "geolocation": null,
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "72.6%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "SEA quartile 1 students",
+            "geolocation": null,
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "58.3%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Aboriginal students",
+            "geolocation": null,
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "51.7%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Students in remote / very remote areas",
+            "geolocation": "remote / very remote",
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "49.0%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Aboriginal students in SEA quartile 1",
+            "geolocation": null,
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "45.7%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "SEA quartile 1 students in remote / very remote areas",
+            "geolocation": "remote / very remote",
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "40.6%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Aboriginal students in remote / very remote areas",
+            "geolocation": "remote / very remote",
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "37.9%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "SEA quartile 1 Aboriginal students in remote / very remote areas",
+            "geolocation": "remote / very remote",
+            "year": "2019 Semester 1",
+            "attendance_level_percentage": "34.6%",
+            "change_in_percentage_points": null
+          }
+        ],
+        "attendance_calculation_methodology": "The method of calculating attendance rates changed in 2018. As part of the process of making NSW government schools’ attendance rates consistent with the National standards for student attendance data reporting, NSW included partial absences and accounted for student mobility in the attendance rate calculations for the first time.",
+        "reasons_for_absences": [
+          "Approved leave",
+          "Illness",
+          "Unexplained absences",
+          "Other explained absences",
+          {
+            "reason": "Unjustified / unexplained"
+          },
+          {
+            "reason": "Sick"
+          },
+          {
+            "reason": "Leave"
+          },
+          {
+            "reason": "Suspended"
+          },
+          "misadventure or unforeseen event",
+          "participation in special events not related to the school",
+          "domestic necessity such as serious illness of an immediate family member",
+          "attendance at funerals",
+          "travel in Australia and overseas",
+          "recognised religious festivals or ceremonial occasions",
+          "other absences not explained by parents, or the principal does not accept the explanation offered for the absence"
+        ],
+        "notes": "Due to changes in the calculation methods, 2018 and 2019 data is not directly comparable to previous years. Some data reflects centralised student-level attendance data, allowing for detailed absence reason and day-of-week analysis. Attendance level is 90% or more: 72.6% of all students attended at least 90% of their time; 25.8% at 98% or more. The lowest attendance was on Fridays. 8.0% of NSW government students identified as Aboriginal in 2019, up from 7.0% in 2015."
+      },
+      "confidence": 0.685,
+      "field_confidences": {
+        "report_year": 0.6666666666666666,
+        "attendance_rate_definition": 0.6666666666666666,
+        "attendance_level_definition": 0.6666666666666666,
+        "aboriginal_and_torres_strait_islander_definition": 0.31666666666666665,
+        "attendance_by_subgroup": 0.65,
+        "attendance_by_geolocation_and_year": 0.3333333333333333,
+        "attendance_calculation_methodology": 0.9666666666666667,
+        "reasons_for_absences": 0.9,
+        "notes": 1
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "db23e4d8-54c7-44a7-a4e8-49c018b9abfd",
+      "document_id": "b8815643-7b2a-4b03-8aa5-6a22757a23b5",
+      "source_file": "2021-government-school-attendance-factsheet.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "report_year": "2021 Semester 1",
+        "attendance_rate_definition": "Nationally, the attendance rate is defined as the number of actual full-time equivalent student days attended by full-time students in Years 1 to 10 in Semester 1 as a percentage of the number of possible student-days attended in Semester 1 (Measurement Framework for Schooling in Australia – Key Performance Measure 1(b)).",
+        "attendance_level_definition": "Public reporting includes both the attendance rate and the proportion of students attending 90% or more of the time (the attendance level). The attendance level is a more volatile measure because many students attend around 90% of the time, so small changes in attendance can move a student from below 90% to 90% or more.",
+        "aboriginal_and_torres_strait_islander_definition": null,
+        "attendance_by_subgroup": [
+          {
+            "education_level": "Kindergarten to Year 2",
+            "year": "2019",
+            "attendance_rate": "88.9",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Kindergarten to Year 2",
+            "year": "2021",
+            "attendance_rate": "87.1",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-1.8",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Years 3 to 6",
+            "year": "2019",
+            "attendance_rate": "88.1",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Years 3 to 6",
+            "year": "2021",
+            "attendance_rate": "86.1",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-1.9",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2019",
+            "attendance_rate": "88.4",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2021",
+            "attendance_rate": "86.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-1.9",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Years 7 to 10",
+            "year": "2019",
+            "attendance_rate": "77.2",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Years 7 to 10",
+            "year": "2021",
+            "attendance_rate": "73.0",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-4.2",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Years 11 to 12",
+            "year": "2019",
+            "attendance_rate": "74.4",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Years 11 to 12",
+            "year": "2021",
+            "attendance_rate": "68.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-5.9",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2019",
+            "attendance_rate": "76.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2021",
+            "attendance_rate": "72.0",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-4.6",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2019",
+            "attendance_rate": "83.8",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2021",
+            "attendance_rate": "80.7",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-3.1",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary (Non-Aboriginal students)",
+            "year": "2019",
+            "attendance_rate": "93.1",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary (Non-Aboriginal students)",
+            "year": "2021",
+            "attendance_rate": "92.9",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-0.2",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary (Non-Aboriginal students)",
+            "year": "2019",
+            "attendance_rate": "88.8",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary (Non-Aboriginal students)",
+            "year": "2021",
+            "attendance_rate": "87.1",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-1.7",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All (Non-Aboriginal students)",
+            "year": "2019",
+            "attendance_rate": "91.4",
+            "attendance_level": null,
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All (Non-Aboriginal students)",
+            "year": "2021",
+            "attendance_rate": "90.6",
+            "attendance_level": null,
+            "change_in_attendance_rate": "-0.8",
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Kindergarten to Year 2",
+            "year": "2019",
+            "attendance_rate": null,
+            "attendance_level": "60.3 (Aboriginal), 78.6 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-6.5 (Aboriginal), 0.2 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Kindergarten to Year 2",
+            "year": "2021",
+            "attendance_rate": null,
+            "attendance_level": "53.8 (Aboriginal), 78.8 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-6.5 (Aboriginal), 0.2 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Years 3 to 6",
+            "year": "2019",
+            "attendance_rate": null,
+            "attendance_level": "57.4 (Aboriginal), 77.1 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-6.6 (Aboriginal), -1.0 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Years 3 to 6",
+            "year": "2021",
+            "attendance_rate": null,
+            "attendance_level": "50.7 (Aboriginal), 76.1 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-6.6 (Aboriginal), -1.0 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2019",
+            "attendance_rate": null,
+            "attendance_level": "58.7 (Aboriginal), 77.8 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-6.6 (Aboriginal), -0.5 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2021",
+            "attendance_rate": null,
+            "attendance_level": "52.1 (Aboriginal), 77.2 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-6.6 (Aboriginal), -0.5 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Years 7 to 10",
+            "year": "2019",
+            "attendance_rate": null,
+            "attendance_level": "36.1 (Aboriginal), 63.7 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-7.4 (Aboriginal), -5.6 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Years 7 to 10",
+            "year": "2021",
+            "attendance_rate": null,
+            "attendance_level": "28.6 (Aboriginal), 58.1 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-7.4 (Aboriginal), -5.6 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Years 11 to 12",
+            "year": "2019",
+            "attendance_rate": null,
+            "attendance_level": "33.7 (Aboriginal), 62.8 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-8.1 (Aboriginal), -5.4 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Years 11 to 12",
+            "year": "2021",
+            "attendance_rate": null,
+            "attendance_level": "25.5 (Aboriginal), 57.4 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-8.1 (Aboriginal), -5.4 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2019",
+            "attendance_rate": null,
+            "attendance_level": "35.5 (Aboriginal), 63.5 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-7.6 (Aboriginal), -5.5 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2021",
+            "attendance_rate": null,
+            "attendance_level": "27.9 (Aboriginal), 57.9 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-7.6 (Aboriginal), -5.5 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "All",
+            "year": "2019",
+            "attendance_rate": null,
+            "attendance_level": "49.5 (Aboriginal), 72.2 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-7.2 (Aboriginal), -2.6 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "All",
+            "year": "2021",
+            "attendance_rate": null,
+            "attendance_level": "42.3 (Aboriginal), 69.6 (Non-Aboriginal)",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": "-7.2 (Aboriginal), -2.6 (Non-Aboriginal)"
+          },
+          {
+            "education_level": "Years 1 to 6",
+            "year": "2021",
+            "attendance_rate": "92.4%",
+            "attendance_level": "74.9%",
+            "change_in_attendance_rate": "-0.3 pp",
+            "change_in_attendance_level": "-3.0 pp"
+          },
+          {
+            "education_level": "Years 7 to 10",
+            "year": "2021",
+            "attendance_rate": "86.2%",
+            "attendance_level": "55.3%",
+            "change_in_attendance_rate": "-0.6 pp",
+            "change_in_attendance_level": "-4.3 pp"
+          },
+          {
+            "education_level": "Years 1 to 10",
+            "year": "2021",
+            "attendance_rate": "90.1%",
+            "attendance_level": "67.8%",
+            "change_in_attendance_rate": "-0.2 pp",
+            "change_in_attendance_level": "-2.9 pp"
+          }
+        ],
+        "attendance_by_geolocation_and_year": [
+          {
+            "student_type": "All",
+            "geolocation": "Major cities",
+            "year": "2019",
+            "attendance_level_percentage": "70.9",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Regional",
+            "year": "2019",
+            "attendance_level_percentage": "63.6 (estimated visually)",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Remote",
+            "year": "2019",
+            "attendance_level_percentage": "49.6",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Major cities",
+            "year": "2021",
+            "attendance_level_percentage": "70.9",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Regional",
+            "year": "2021",
+            "attendance_level_percentage": "56.9 (estimated visually)",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Remote",
+            "year": "2021",
+            "attendance_level_percentage": "41.1",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2019",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null,
+            "leave": "14.3",
+            "sick": "24.8"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2021",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null,
+            "leave": "8.8",
+            "sick": "31.4"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2019",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null,
+            "leave": "14.7",
+            "sick": "27.0"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2021",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null,
+            "leave": "15.1",
+            "sick": "38.4"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2019",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null,
+            "leave": "23.3",
+            "sick": "32.4"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2021",
+            "attendance_level_percentage": null,
+            "change_in_percentage_points": null,
+            "leave": "26.1",
+            "sick": "44.9"
+          }
+        ],
+        "attendance_calculation_methodology": "In 2021 attendance figures were calculated differently to align with the third edition of ACARA’s ‘National Standards for Student Attendance Data and Reporting’. These calculation changes include: no rounding when determining whether a student’s attendance rate meets the 90% threshold for attendance level calculations; including the final week of Term 2; treating partial absences over 120 minutes as a half day absence (instead of their actual value, calculated as a proportion of a nominal 6-hour day). In addition, an automated attendance feed (AAF) system was implemented to improve data quality.",
+        "reasons_for_absences": [
+          "leave",
+          "sickness",
+          "unexplained/unjustified absences",
+          "suspensions",
+          "misadventure or unforeseen event",
+          "participation in special events not related to the school",
+          "domestic necessity such as serious illness of an immediate family member",
+          "attendance at funerals",
+          "travel in Australia and overseas",
+          "recognised religious festivals or ceremonial occasions",
+          "other absences not explained by parents, or the principal does not accept the explanation offered for the absence"
+        ],
+        "notes": "The attendance figures provided in this factsheet may differ slightly from attendance targets reported elsewhere. No state-wide or regional lockdowns in NSW occurred during Semester 1 2021, but COVID-19 continued to affect student attendance and attendance codes changed. Due to the impact of COVID-19 on 2020 data, 2021 attendance data is mainly compared with 2019 data. Figures in this factsheet exclude 2020 due to the break in series from COVID-19 impacts."
+      },
+      "confidence": 0.65,
+      "field_confidences": {
+        "report_year": 1,
+        "attendance_rate_definition": 0.3333333333333333,
+        "attendance_level_definition": 0.6666666666666666,
+        "aboriginal_and_torres_strait_islander_definition": 0,
+        "attendance_by_subgroup": 0.9700000000000001,
+        "attendance_by_geolocation_and_year": 0.5833333333333334,
+        "attendance_calculation_methodology": 0.6666666666666666,
+        "reasons_for_absences": 0.6666666666666666,
+        "notes": 0.96
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    },
+    {
+      "id": "dfa94433-df3d-4fd6-84e4-ab68666b08e6",
+      "document_id": "e64e226b-4c4c-4ed5-9e13-a2ec43d3cfb3",
+      "source_file": "2022-government-school-attendance-factsheet.pdf",
+      "page_number": 1,
+      "extracted_data": {
+        "report_year": "2022 Semester 1",
+        "attendance_rate_definition": "The attendance rate is the percentage of days students attended school, compared to student enrolled days.",
+        "attendance_level_definition": "The attendance level is the proportion of students attending 90% or more of the time. This measure was introduced in 2018 and is more variable than the attendance rate as it is binary (that is, a student attending less than 90% of the time or a student attending 90% or more of the time).",
+        "aboriginal_and_torres_strait_islander_definition": null,
+        "attendance_by_subgroup": [
+          {
+            "education_level": "K-2",
+            "year": "2021",
+            "attendance_rate": "87.1",
+            "attendance_level": "53.4",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "K-2",
+            "year": "2022",
+            "attendance_rate": "82.0",
+            "attendance_level": "32.7",
+            "change_in_attendance_rate": "-5.1",
+            "change_in_attendance_level": "-20.7"
+          },
+          {
+            "education_level": "3-6",
+            "year": "2021",
+            "attendance_rate": "86.1",
+            "attendance_level": "50.4",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "3-6",
+            "year": "2022",
+            "attendance_rate": "80.8",
+            "attendance_level": "30.1",
+            "change_in_attendance_rate": "-5.3",
+            "change_in_attendance_level": "-20.3"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2021",
+            "attendance_rate": "86.6",
+            "attendance_level": "51.7",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Primary",
+            "year": "2022",
+            "attendance_rate": "81.3",
+            "attendance_level": "31.2",
+            "change_in_attendance_rate": "-5.3",
+            "change_in_attendance_level": "-20.5"
+          },
+          {
+            "education_level": "7-10",
+            "year": "2021",
+            "attendance_rate": "73.0",
+            "attendance_level": "28.3",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "7-10",
+            "year": "2022",
+            "attendance_rate": "68.3",
+            "attendance_level": "16.6",
+            "change_in_attendance_rate": "-4.7",
+            "change_in_attendance_level": "-11.7"
+          },
+          {
+            "education_level": "11-12",
+            "year": "2021",
+            "attendance_rate": "68.6",
+            "attendance_level": "25.3",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "11-12",
+            "year": "2022",
+            "attendance_rate": "64.3",
+            "attendance_level": "17.7",
+            "change_in_attendance_rate": "-4.3",
+            "change_in_attendance_level": "-7.6"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2021",
+            "attendance_rate": "72.0",
+            "attendance_level": "27.6",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2022",
+            "attendance_rate": "67.4",
+            "attendance_level": "16.9",
+            "change_in_attendance_rate": "-4.6",
+            "change_in_attendance_level": "-10.7"
+          },
+          {
+            "education_level": "All",
+            "year": "2021",
+            "attendance_rate": "80.7",
+            "attendance_level": "42.0",
+            "change_in_attendance_rate": null,
+            "change_in_attendance_level": null
+          },
+          {
+            "education_level": "All",
+            "year": "2022",
+            "attendance_rate": "75.7",
+            "attendance_level": "25.4",
+            "change_in_attendance_rate": "-5.0",
+            "change_in_attendance_level": "-16.6"
+          },
+          {
+            "education_level": "K-2",
+            "year": "2021",
+            "attendance_rate": "93.2",
+            "attendance_level": "78.7",
+            "change_in_attendance_rate": "-4.9",
+            "change_in_attendance_level": "-26.2"
+          },
+          {
+            "education_level": "K-2",
+            "year": "2022",
+            "attendance_rate": "88.3",
+            "attendance_level": "52.5",
+            "change_in_attendance_rate": "-4.9",
+            "change_in_attendance_level": "-26.2"
+          },
+          {
+            "education_level": "3-6",
+            "year": "2021",
+            "attendance_rate": "92.7",
+            "attendance_level": "76.1",
+            "change_in_attendance_rate": "-5.1",
+            "change_in_attendance_level": "-26.6"
+          },
+          {
+            "education_level": "3-6",
+            "year": "2022",
+            "attendance_rate": "87.6",
+            "attendance_level": "49.5",
+            "change_in_attendance_rate": "-5.1",
+            "change_in_attendance_level": "-26.6"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2021",
+            "attendance_rate": "92.9",
+            "attendance_level": "77.2",
+            "change_in_attendance_rate": "-5.0",
+            "change_in_attendance_level": "-26.4"
+          },
+          {
+            "education_level": "Primary",
+            "year": "2022",
+            "attendance_rate": "87.9",
+            "attendance_level": "50.8",
+            "change_in_attendance_rate": "-5.0",
+            "change_in_attendance_level": "-26.4"
+          },
+          {
+            "education_level": "7-10",
+            "year": "2021",
+            "attendance_rate": "87.4",
+            "attendance_level": "58.0",
+            "change_in_attendance_rate": "-4.3",
+            "change_in_attendance_level": "-19.4"
+          },
+          {
+            "education_level": "7-10",
+            "year": "2022",
+            "attendance_rate": "83.1",
+            "attendance_level": "38.6",
+            "change_in_attendance_rate": "-4.3",
+            "change_in_attendance_level": "-19.4"
+          },
+          {
+            "education_level": "11-12",
+            "year": "2021",
+            "attendance_rate": "86.2",
+            "attendance_level": "57.2",
+            "change_in_attendance_rate": "-3.3",
+            "change_in_attendance_level": "-14.2"
+          },
+          {
+            "education_level": "11-12",
+            "year": "2022",
+            "attendance_rate": "82.9",
+            "attendance_level": "43.0",
+            "change_in_attendance_rate": "-3.3",
+            "change_in_attendance_level": "-14.2"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2021",
+            "attendance_rate": "87.1",
+            "attendance_level": "57.7",
+            "change_in_attendance_rate": "-4.1",
+            "change_in_attendance_level": "-17.9"
+          },
+          {
+            "education_level": "Secondary",
+            "year": "2022",
+            "attendance_rate": "83.0",
+            "attendance_level": "39.8",
+            "change_in_attendance_rate": "-4.1",
+            "change_in_attendance_level": "-17.9"
+          },
+          {
+            "education_level": "All",
+            "year": "2021",
+            "attendance_rate": "90.6",
+            "attendance_level": "69.5",
+            "change_in_attendance_rate": "-4.6",
+            "change_in_attendance_level": "-23.1"
+          },
+          {
+            "education_level": "All",
+            "year": "2022",
+            "attendance_rate": "86.0",
+            "attendance_level": "46.4",
+            "change_in_attendance_rate": "-4.6",
+            "change_in_attendance_level": "-23.1"
+          }
+        ],
+        "attendance_by_geolocation_and_year": [
+          {
+            "student_type": "All",
+            "geolocation": "Major cities",
+            "year": "2021",
+            "attendance_level_percentage": "70.8",
+            "change_in_percentage_points": "-23.7"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Major cities",
+            "year": "2022",
+            "attendance_level_percentage": "47.1",
+            "change_in_percentage_points": "-23.7"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Regional",
+            "year": "2021",
+            "attendance_level_percentage": "56.2",
+            "change_in_percentage_points": "-19.4"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Regional",
+            "year": "2022",
+            "attendance_level_percentage": "36.8",
+            "change_in_percentage_points": "-19.4"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Remote",
+            "year": "2021",
+            "attendance_level_percentage": "41.1",
+            "change_in_percentage_points": "-15.5"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "Remote",
+            "year": "2022",
+            "attendance_level_percentage": "25.6",
+            "change_in_percentage_points": "-15.5"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "All",
+            "year": "2021",
+            "attendance_level_percentage": "67.2",
+            "change_in_percentage_points": "-22.6"
+          },
+          {
+            "student_type": "All",
+            "geolocation": "All",
+            "year": "2022",
+            "attendance_level_percentage": "44.6",
+            "change_in_percentage_points": "-22.6"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2021",
+            "attendance_level_percentage": "70.8%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Major cities",
+            "year": "2022",
+            "attendance_level_percentage": "47.1%",
+            "change_in_percentage_points": "-23.7"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2021",
+            "attendance_level_percentage": "56.2%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Regional",
+            "year": "2022",
+            "attendance_level_percentage": "36.8%",
+            "change_in_percentage_points": "-19.4"
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2021",
+            "attendance_level_percentage": "41.1%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Primary",
+            "geolocation": "Remote",
+            "year": "2022",
+            "attendance_level_percentage": "25.6%",
+            "change_in_percentage_points": "-15.5"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Major cities",
+            "year": "2021",
+            "attendance_level_percentage": "60.7%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Major cities",
+            "year": "2022",
+            "attendance_level_percentage": "42.3%",
+            "change_in_percentage_points": "-18.4"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Regional",
+            "year": "2021",
+            "attendance_level_percentage": "48.9%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Regional",
+            "year": "2022",
+            "attendance_level_percentage": "34.3%",
+            "change_in_percentage_points": "-14.6"
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Remote",
+            "year": "2021",
+            "attendance_level_percentage": "38.4%",
+            "change_in_percentage_points": null
+          },
+          {
+            "student_type": "Secondary",
+            "geolocation": "Remote",
+            "year": "2022",
+            "attendance_level_percentage": "25.6%",
+            "change_in_percentage_points": "-12.8"
+          }
+        ],
+        "attendance_calculation_methodology": "The attendance calculation methodology was revised in 2020 to align with the third edition of ACARA’s ‘National standards for student attendance data and reporting’, differing to the target calculation methodology developed in 2018. The nationally published My School figures do not include Kindergarten, Year 11 and Year 12 students.",
+        "reasons_for_absences": [
+          "Absence reasons were analysed in this fact sheet to show causes of decline in student attendance.",
+          "Number of absence days for schools that were non-operational due to floods in Semester 1 2022.",
+          "Number of weekly COVID-19 and influenza cases were analysed to provide contextual factors.",
+          "Leave",
+          "Sick",
+          "Suspended",
+          "Unexplained / Pending Explanation",
+          "Unjustified Explanation Received",
+          "misadventure or unforeseen event",
+          "participation in special events not related to the school",
+          "domestic necessity, such as serious illness of an immediate family member",
+          "attendance at funerals",
+          "travel in Australia and overseas",
+          "recognised religious festivals or ceremonial occasions",
+          "other absences not explained by parents, or the principal does not accept the explanation offered for the absence"
+        ],
+        "notes": "While there were no COVID-19 lockdowns or learning from home periods in Semester 1, 2022, the prevalence of COVID-19 in the community was much greater than in 2021 and it continued to cause large variability in attendance data. Student attendance data for 2020 is excluded due to the impact of COVID-19. Furthermore, the number of absence days for schools that were non-operational due to floods in Semester 1 2022 and the number of weekly COVID-19 and influenza cases were analysed to provide contextual factors that may have contributed to the decline in attendance."
+      },
+      "confidence": 0.571,
+      "field_confidences": {
+        "report_year": 1,
+        "attendance_rate_definition": 0.5,
+        "attendance_level_definition": 0.5,
+        "aboriginal_and_torres_strait_islander_definition": 0,
+        "attendance_by_subgroup": 0.49,
+        "attendance_by_geolocation_and_year": 0.4825,
+        "attendance_calculation_methodology": 0.7125,
+        "reasons_for_absences": 0.725,
+        "notes": 0.725
+      },
+      "warnings": [],
+      "is_reviewed": true,
+      "manual_overrides": null
+    }
+  ]
+}
