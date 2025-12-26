@@ -190,7 +190,7 @@ export function EditableResultsTable({
         throw err; // Re-throw to let SmartCell handle the error
       }
     },
-    [onDataUpdate]
+    [onDataUpdate, batchId]
   );
 
   // Handle dynamic calculation engine for all rows
@@ -582,25 +582,27 @@ export function EditableResultsTable({
             <span className="sm:hidden">🧮 Calculate</span>
           </button>
 
-          {/* Approve All Button */}
-          <button
-            onClick={handleApproveAll}
-            disabled={isApproving || approvalStatus === "success"}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${approvalStatus === "success"
-              ? "bg-emerald-500/20 text-emerald-400 cursor-default"
-              : "bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-600"
-              }`}
-          >
-            {isApproving ? (
-              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-            ) : approvalStatus === "success" ? (
-              <CheckCircle className="w-4 h-4 flex-shrink-0" />
-            ) : (
-              <Check className="w-4 h-4 flex-shrink-0" />
-            )}
-            <span className="hidden sm:inline">{approvalStatus === "success" ? "All Approved" : "Approve All"}</span>
-            <span className="sm:hidden">{approvalStatus === "success" ? "Approved" : "Approve"}</span>
-          </button>
+          {/* Approve All Button - Only show if not all approved */}
+          {reviewedCount < localResults.length && (
+            <button
+              onClick={handleApproveAll}
+              disabled={isApproving || approvalStatus === "success"}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${approvalStatus === "success"
+                ? "bg-emerald-500/20 text-emerald-400 cursor-default"
+                : "bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-600"
+                }`}
+            >
+              {isApproving ? (
+                <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+              ) : approvalStatus === "success" ? (
+                <CheckCircle className="w-4 h-4 flex-shrink-0" />
+              ) : (
+                <Check className="w-4 h-4 flex-shrink-0" />
+              )}
+              <span className="hidden sm:inline">{approvalStatus === "success" ? "All Approved" : "Approve All"}</span>
+              <span className="sm:hidden">{approvalStatus === "success" ? "Approved" : "Approve"}</span>
+            </button>
+          )}
 
           <button
             onClick={exportToCSV}

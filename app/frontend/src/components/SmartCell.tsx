@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Table, Save, Loader2 } from "lucide-react";
+import { X, Table, Save, Loader2, Eye } from "lucide-react";
 
 interface SmartCellProps {
   value: unknown;
@@ -20,6 +20,51 @@ interface ArrayEditorModalProps {
   fieldName: string;
   onClose: () => void;
   onSave: (newValue: unknown[]) => Promise<void>;
+}
+
+interface TextViewModalProps {
+  text: string;
+  fieldName: string;
+  onClose: () => void;
+}
+
+function TextViewModal({ text, fieldName, onClose }: TextViewModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal */}
+      <div className="relative w-[90vw] max-w-2xl max-h-[80vh] bg-slate-900 rounded-xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700 bg-slate-800/50">
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-semibold text-slate-200">
+              {fieldName.replace(/_/g, " ")}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-700 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto p-6">
+          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700">
+            <pre className="text-sm text-slate-300 whitespace-pre-wrap break-words font-mono">
+              {text}
+            </pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ArrayItemModal({ items, fieldName, onClose }: ArrayItemModalProps) {
@@ -234,6 +279,7 @@ export function SmartCell({
 }: SmartCellProps) {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isTextModalOpen, setIsTextModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(
     value !== null && value !== undefined ? String(value) : ""
@@ -322,6 +368,11 @@ export function SmartCell({
   // Handle scalar values
   const displayValue =
     value !== null && value !== undefined ? String(value) : "—";
+  
+  // Check if text is long enough to show popup (more than 50 chars)
+  const isLongText = typeof displayValue === "string" && displayValue.length > 50;
+  // Show popup button for all long text (works for both editable and non-editable cells)
+  const shouldShowPopup = isLongText && !isEditing;
 
   // Confidence badge color
   const getConfidenceBadgeColor = () => {
@@ -400,27 +451,52 @@ export function SmartCell({
   }
 
   return (
-    <div
-      className={`flex items-center justify-between gap-2 h-full w-full px-2 py-1 ${bgClass} rounded ${
-        editable && onSave ? "cursor-text hover:bg-slate-800/50 transition-colors" : ""
-      }`}
-      onClick={() => {
-        if (editable && onSave) {
-          setIsEditing(true);
-        }
-      }}
-    >
-      <span className={`text-sm ${textClass} flex-1 whitespace-nowrap overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.2)]`}>
-        {displayValue}
-      </span>
-      {confidence !== undefined && (
-        <span
-          className={`text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${getConfidenceBadgeColor()}`}
+    <>
+      <div
+        className={`flex items-center justify-between gap-2 h-full w-full px-2 py-1 ${bgClass} rounded ${
+          editable && onSave ? "cursor-text hover:bg-slate-800/50 transition-colors" : ""
+        }`}
+        onClick={() => {
+          if (editable && onSave) {
+            setIsEditing(true);
+          }
+        }}
+      >
+        <span 
+          className={`text-sm ${textClass} flex-1 whitespace-nowrap overflow-x-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent shadow-[inset_-10px_0_10px_-10px_rgba(0,0,0,0.2)]`}
         >
-          {Math.round(confidence * 100)}%
+          {isLongText ? `${displayValue.substring(0, 50)}...` : displayValue}
         </span>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {shouldShowPopup && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsTextModalOpen(true);
+              }}
+              className="p-1 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded transition-colors"
+              title="View full text"
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {confidence !== undefined && (
+            <span
+              className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${getConfidenceBadgeColor()}`}
+            >
+              {Math.round(confidence * 100)}%
+            </span>
+          )}
+        </div>
+      </div>
+      {isTextModalOpen && (
+        <TextViewModal
+          text={displayValue}
+          fieldName={fieldName}
+          onClose={() => setIsTextModalOpen(false)}
+        />
       )}
-    </div>
+    </>
   );
 }
 
