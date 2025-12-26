@@ -9,6 +9,7 @@ import {
   AlertCircle,
   History,
   Home,
+  CheckCircle,
 } from "lucide-react";
 import {
   UploadZone,
@@ -425,6 +426,17 @@ export default function App() {
                     selectedFiles={batchFiles}
                     isLoading={isLoading}
                   />
+                  
+                  {batchFiles.length > 0 && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-3 flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-emerald-400" />
+                      <p className="text-sm text-emerald-300">
+                        {batchFiles.length === 1 
+                          ? "Discovery file automatically added to batch"
+                          : `${batchFiles.length} files ready for extraction`}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex justify-center">
                     <button
