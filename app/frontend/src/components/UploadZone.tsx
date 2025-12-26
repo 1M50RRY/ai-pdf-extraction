@@ -103,9 +103,8 @@ export function UploadZone({
                     : "Select a template..."}
               </span>
               <ChevronDown
-                className={`w-5 h-5 text-slate-400 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+                className={`w-5 h-5 text-slate-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                  }`}
               />
             </button>
 
@@ -149,10 +148,9 @@ export function UploadZone({
         className={`
           relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer
           transition-all duration-300 ease-out
-          ${
-            isDragActive
-              ? "border-indigo-500 bg-indigo-500/10 scale-[1.02]"
-              : "border-slate-600 hover:border-indigo-400 hover:bg-slate-800/50"
+          ${isDragActive
+            ? "border-indigo-500 bg-indigo-500/10 scale-[1.02]"
+            : "border-slate-600 hover:border-indigo-400 hover:bg-slate-800/50"
           }
           ${isLoading ? "pointer-events-none opacity-60" : ""}
         `}
@@ -166,9 +164,8 @@ export function UploadZone({
             <FileText className="w-16 h-16 text-emerald-400" />
           ) : (
             <Upload
-              className={`w-16 h-16 transition-colors ${
-                isDragActive ? "text-indigo-400" : "text-slate-400"
-              }`}
+              className={`w-16 h-16 transition-colors ${isDragActive ? "text-indigo-400" : "text-slate-400"
+                }`}
             />
           )}
 
@@ -241,10 +238,9 @@ export function MultiUploadZone({
         className={`
           border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
           transition-all duration-200
-          ${
-            isDragActive
-              ? "border-indigo-500 bg-indigo-500/10"
-              : "border-slate-600 hover:border-indigo-400"
+          ${isDragActive
+            ? "border-indigo-500 bg-indigo-500/10"
+            : "border-slate-600 hover:border-indigo-400"
           }
           ${isLoading ? "pointer-events-none opacity-60" : ""}
         `}
@@ -256,6 +252,11 @@ export function MultiUploadZone({
         </p>
         <p className="text-sm text-slate-500 mt-1">
           {selectedFiles.length} file(s) selected
+          {selectedFiles.length > 0 && selectedFiles.length === 1 && (
+            <span className="ml-2 text-emerald-400 text-xs">
+              (Discovery file auto-added)
+            </span>
+          )}
         </p>
       </div>
 
