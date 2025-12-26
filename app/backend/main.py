@@ -1315,7 +1315,7 @@ async def smart_repair_document(
     # Get current extracted data
     current_data = extraction.data.copy()
     
-    # Get schema if available (from batch)
+    # Get FULL schema from batch (REQUIRED for calculation engine)
     schema = None
     if document.batch_id:
         batch = db.query(DocumentBatch).filter(DocumentBatch.id == document.batch_id).first()
@@ -1324,10 +1324,25 @@ async def smart_repair_document(
             if saved_schema and saved_schema.structure:
                 try:
                     schema = SchemaDefinition(**saved_schema.structure)
+                    logger.info(
+                        "Loaded schema for repair: '%s' with %d fields",
+                        schema.name,
+                        len(schema.fields),
+                    )
                 except Exception as e:
                     logger.warning("Failed to parse schema for repair: %s", e)
+        else:
+            logger.warning(
+                "No schema_id found in batch %s - calculation engine will use basic mode",
+                document.batch_id,
+            )
+    else:
+        logger.warning(
+            "Document %s has no batch_id - cannot load schema for calculation",
+            document_id,
+        )
     
-    # Run LLM-based repair
+    # Run LLM-based calculation engine (requires full schema for dynamic calculation)
     repaired_data = await ai_service.repair_data_with_llm(current_data, schema)
     
     # Check if any fields were repaired

@@ -193,7 +193,7 @@ export function EditableResultsTable({
     [onDataUpdate]
   );
 
-  // Handle auto-calculate for all rows
+  // Handle dynamic calculation engine for all rows
   const handleAutoCalculate = async () => {
     setIsAutoCalculating(true);
     const documentIds = localResults.map((r) => r.document_id);
@@ -380,7 +380,7 @@ export function EditableResultsTable({
                 {isAutoCalculated && (
                   <div
                     className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500 z-10"
-                    title="Auto-calculated"
+                    title="Smart-calculated by AI"
                   />
                 )}
               </div>
@@ -415,7 +415,7 @@ export function EditableResultsTable({
               {isAutoCalculated && (
                 <div
                   className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500 z-10"
-                  title="Auto-calculated"
+                  title="Smart-calculated by AI"
                 />
               )}
             </div>
@@ -566,19 +566,19 @@ export function EditableResultsTable({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Auto-Calculate Button */}
+          {/* Dynamic Calculation Engine Button */}
           <button
             onClick={handleAutoCalculate}
             disabled={isAutoCalculating}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors font-medium disabled:bg-slate-600 disabled:cursor-not-allowed"
-            title="Auto-fill missing calculated fields (Tax, Total, etc.)"
+            title="Dynamic Calculation Engine: Calculates missing values, infers formulas from field names, computes totals/averages, cross-references data, and completes patterns"
           >
             {isAutoCalculating ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Sparkles className="w-4 h-4" />
             )}
-            🪄 Auto-Fill Missing Math
+            🧮 Smart Calculate & Complete
           </button>
 
           {/* Approve All Button */}

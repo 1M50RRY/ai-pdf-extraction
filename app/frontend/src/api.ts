@@ -304,7 +304,14 @@ export async function updateExtraction(
 }
 
 /**
- * Smart repair missing fields using LLM
+ * Dynamic Calculation Engine: Use LLM to complete and calculate missing values.
+ * 
+ * This sophisticated engine:
+ * - Analyzes the full schema to identify missing fields
+ * - Infers formulas from field names and descriptions
+ * - Calculates missing values from available data (totals, averages, etc.)
+ * - Cross-references values across the dataset
+ * - Aggressively completes missing data based on patterns
  */
 export async function autoCalculateDocument(documentId: string): Promise<ExtractionDetail> {
   const response = await api.post<ExtractionDetail>(`/documents/${documentId}/smart-repair`);
