@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Clock,
@@ -10,13 +11,9 @@ import {
   History,
 } from "lucide-react";
 import { getBatchHistory, getBatchStatus, getSchema, type BatchSummary } from "../api";
-import { EditableResultsTable, type EditableExtractionResult } from "./EditableResultsTable";
-import { ValidationModal } from "./ValidationModal";
+import { EditableResultsTable, type EditableExtractionResult } from "../components/EditableResultsTable";
+import { ValidationModal } from "../components/ValidationModal";
 import type { SchemaDefinition } from "../types";
-
-interface HistoryPageProps {
-  onBack: () => void;
-}
 
 function formatDate(isoString: string): string {
   const date = new Date(isoString);
@@ -75,7 +72,8 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function HistoryPage({ onBack }: HistoryPageProps) {
+export function HistoryPage() {
+  const navigate = useNavigate();
   const [batches, setBatches] = useState<BatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -273,7 +271,7 @@ export function HistoryPage({ onBack }: HistoryPageProps) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <button
-          onClick={onBack}
+          onClick={() => navigate("/")}
           className="flex items-center gap-2 text-slate-400 hover:text-slate-200 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

@@ -1,29 +1,16 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type SortingState,
-  type ColumnDef,
 } from "@tanstack/react-table";
 import {
-  AlertTriangle,
-  Check,
-  CheckCircle,
   ChevronDown,
   ChevronUp,
-  Download,
-  Edit3,
-  Eye,
-  FileText,
-  Info,
-  Loader2,
-  Sparkles,
 } from "lucide-react";
 import { updateExtraction, approveBatch, getBatchStatus, autoCalculateDocument } from "../api";
 import type { SchemaDefinition } from "../types";
-import { SmartCell } from "./SmartCell";
+import { useTableConfig } from "./results/hooks/useTableConfig";
+import { TableToolbar } from "./results/TableToolbar";
+import { ValidationSummary } from "./results/ValidationSummary";
 
 // Extended extraction result with editing metadata
 export interface EditableExtractionResult {
@@ -47,68 +34,6 @@ interface EditableResultsTableProps {
   onDataUpdate?: (results: EditableExtractionResult[]) => void;
 }
 
-function ConfidenceBadge({ confidence }: { confidence: number }) {
-  const percentage = Math.round(confidence * 100);
-
-  let bgColor = "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
-  if (confidence < 0.5) {
-    bgColor = "bg-red-500/20 text-red-300 border-red-500/30";
-  } else if (confidence < 0.8) {
-    bgColor = "bg-amber-500/20 text-amber-300 border-amber-500/30";
-  }
-
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${bgColor}`}
-    >
-      {percentage}%
-    </span>
-  );
-}
-
-function WarningsTooltip({ warnings }: { warnings: string[] }) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  if (warnings.length === 0) return null;
-
-  return (
-    <div className="relative inline-block">
-      <button
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
-        className="p-1 text-amber-400 hover:bg-amber-400/20 rounded transition-colors"
-      >
-        <AlertTriangle className="w-4 h-4" />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 w-72">
-          <div className="bg-slate-800 border border-slate-600 rounded-lg shadow-xl p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Info className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-medium text-amber-300">
-                {warnings.length} Warning(s)
-              </span>
-            </div>
-            <ul className="space-y-1 text-xs text-slate-300">
-              {warnings.map((warning, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="text-slate-500">•</span>
-                  <span>{warning}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full">
-              <div className="border-8 border-transparent border-t-slate-600" />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
 export function EditableResultsTable({
   results,
   schema,
@@ -116,7 +41,6 @@ export function EditableResultsTable({
   onRowClick,
   onDataUpdate,
 }: EditableResultsTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
   const [localResults, setLocalResults] = useState(results);
   const [isApproving, setIsApproving] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<"idle" | "success" | "error">("idle");
@@ -266,174 +190,13 @@ export function EditableResultsTable({
     }
   };
 
-  const columns = useMemo((): ColumnDef<EditableExtractionResult, unknown>[] => {
-    const cols: ColumnDef<EditableExtractionResult, unknown>[] = [
-      {
-        id: "actions",
-        header: "",
-        cell: (info) => (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRowClick?.(info.row.original);
-            }}
-            className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors"
-            title="View details"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-        ),
-      },
-      {
-        accessorKey: "source_file",
-        header: "Source File",
-        cell: (info) => (
-          <div className="flex items-center gap-2 max-w-[180px] whitespace-nowrap overflow-x-auto scrollbar-hide">
-            <FileText className="w-4 h-4 text-slate-500 flex-shrink-0" />
-            <span className="text-sm font-mono text-slate-300 truncate">
-              {info.getValue() as string}
-            </span>
-            {info.row.original.is_reviewed && (
-              <span title="Reviewed" className="flex-shrink-0">
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-              </span>
-            )}
-          </div>
-        ),
-      },
-      {
-        accessorKey: "confidence",
-        header: "Confidence",
-        cell: (info) => <ConfidenceBadge confidence={info.getValue() as number} />,
-      },
-      {
-        accessorKey: "warnings",
-        header: "Status",
-        cell: (info) => {
-          const warnings = info.getValue() as string[];
-          return warnings.length > 0 ? (
-            <WarningsTooltip warnings={warnings} />
-          ) : (
-            <span className="text-emerald-400 text-xs">✓ OK</span>
-          );
-        },
-      },
-    ];
-
-    // Add editable columns for each field in schema
-    schema.fields.forEach((field) => {
-      cols.push({
-        id: field.name,
-        accessorFn: (row) => row.extracted_data[field.name],
-        header: field.name.replace(/_/g, " ").toUpperCase(),
-        cell: (info) => {
-          const value = info.getValue();
-          const row = info.row.original;
-
-          // Debug logging
-          console.log("Row Data:", {
-            id: row.id,
-            field: field.name,
-            value,
-            field_confidences: row.field_confidences,
-            confidence: row.confidence,
-          });
-
-          const hasOverride = row.manual_overrides?.[field.name] !== undefined;
-          const overrideData = row.manual_overrides?.[field.name];
-          const isAutoCalculated = Boolean(
-            overrideData &&
-            typeof overrideData === "object" &&
-            overrideData !== null &&
-            "auto_calculated" in overrideData
-          );
-          const isCalculating = calculatingDocumentIds.has(row.document_id);
-          // Use per-field confidence if available, else fall back to global
-          const fieldConfidence = row.field_confidences?.[field.name] ?? row.confidence;
-
-          // For arrays, use SmartCell with onSave for editing
-          if (Array.isArray(value)) {
-            return (
-              <div className="relative">
-                <div className={isAutoCalculated ? "bg-blue-500/10 border border-blue-500/30 rounded px-1" : ""}>
-                  {isCalculating && (
-                    <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center z-10 rounded">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                    </div>
-                  )}
-                  <SmartCell
-                    value={value}
-                    confidence={fieldConfidence}
-                    fieldName={field.name}
-                    onSave={async (newValue) => {
-                      await handleCellUpdate(row.id, field.name, newValue);
-                    }}
-                    editable={true}
-                  />
-                </div>
-                {hasOverride && !isAutoCalculated && (
-                  <div
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10"
-                    title="Manually edited"
-                  />
-                )}
-                {isAutoCalculated && (
-                  <div
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500 z-10"
-                    title="Smart-calculated by AI"
-                  />
-                )}
-              </div>
-            );
-          }
-
-          // Use SmartCell for scalar values too (with editing support)
-          return (
-            <div className="relative">
-              <div className={isAutoCalculated ? "bg-blue-500/10 border border-blue-500/30 rounded px-1" : ""}>
-                {isCalculating && (
-                  <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center z-10 rounded">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                  </div>
-                )}
-                <SmartCell
-                  value={value}
-                  confidence={fieldConfidence}
-                  fieldName={field.name}
-                  onSave={async (newValue) => {
-                    await handleCellUpdate(row.id, field.name, newValue);
-                  }}
-                  editable={true}
-                />
-              </div>
-              {hasOverride && !isAutoCalculated && (
-                <div
-                  className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-indigo-500 z-10"
-                  title="Manually edited"
-                />
-              )}
-              {isAutoCalculated && (
-                <div
-                  className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500 z-10"
-                  title="Smart-calculated by AI"
-                />
-              )}
-            </div>
-          );
-        },
-      });
-    });
-
-    return cols;
-  }, [schema.fields, handleCellUpdate, onRowClick, calculatingDocumentIds]);
-
-  const table = useReactTable({
-    data: localResults,
-    columns,
-    state: { sorting },
-    onSortingChange: setSorting,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
+  // Use the extracted table configuration hook
+  const { table } = useTableConfig({
+    results: localResults,
+    schema,
+    onRowClick,
+    onCellUpdate: handleCellUpdate,
+    calculatingDocumentIds,
   });
 
   // Helper to format cell value for CSV (handles arrays)
@@ -502,6 +265,9 @@ export function EditableResultsTable({
   };
 
   const exportToJSON = () => {
+    const avgConfidence =
+      localResults.reduce((sum, r) => sum + r.confidence, 0) / localResults.length;
+
     const exportData = {
       schema: schema,
       batch_id: batchId,
@@ -522,118 +288,28 @@ export function EditableResultsTable({
   };
 
   // Calculate stats
-  const avgConfidence =
-    localResults.reduce((sum, r) => sum + r.confidence, 0) / localResults.length;
-  const warningCount = localResults.filter((r) => r.warnings.length > 0).length;
   const reviewedCount = localResults.filter((r) => r.is_reviewed).length;
 
   return (
     <div className="space-y-6">
-      {/* Stats Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-6">
-          <div>
-            <p className="text-sm text-slate-400">Total Extractions</p>
-            <p className="text-2xl font-bold text-slate-100">
-              {localResults.length}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-slate-400">Avg. Confidence</p>
-            <p className="text-2xl font-bold text-slate-100">
-              {Math.round(avgConfidence * 100)}%
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-slate-400">Reviewed</p>
-            <p
-              className={`text-2xl font-bold ${reviewedCount === localResults.length
-                ? "text-emerald-400"
-                : "text-amber-400"
-                }`}
-            >
-              {reviewedCount}/{localResults.length}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-slate-400">Warnings</p>
-            <p
-              className={`text-2xl font-bold ${warningCount > 0 ? "text-amber-400" : "text-emerald-400"}`}
-            >
-              {warningCount}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Dynamic Calculation Engine Button */}
-          <button
-            onClick={handleAutoCalculate}
-            disabled={isAutoCalculating}
-            className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors text-sm font-medium disabled:bg-slate-600 disabled:cursor-not-allowed whitespace-nowrap"
-            title="Dynamic Calculation Engine: Calculates missing values, infers formulas from field names, computes totals/averages, cross-references data, and completes patterns"
-          >
-            {isAutoCalculating ? (
-              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-            ) : (
-              <Sparkles className="w-4 h-4 flex-shrink-0" />
-            )}
-            <span className="hidden sm:inline">🧮 Smart Calculate</span>
-            <span className="sm:hidden">🧮 Calculate</span>
-          </button>
-
-          {/* Approve All Button - Only show if not all approved */}
-          {reviewedCount < localResults.length && (
-            <button
-              onClick={handleApproveAll}
-              disabled={isApproving || approvalStatus === "success"}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${approvalStatus === "success"
-                ? "bg-emerald-500/20 text-emerald-400 cursor-default"
-                : "bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-600"
-                }`}
-            >
-              {isApproving ? (
-                <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
-              ) : approvalStatus === "success" ? (
-                <CheckCircle className="w-4 h-4 flex-shrink-0" />
-              ) : (
-                <Check className="w-4 h-4 flex-shrink-0" />
-              )}
-              <span className="hidden sm:inline">{approvalStatus === "success" ? "All Approved" : "Approve All"}</span>
-              <span className="sm:hidden">{approvalStatus === "success" ? "Approved" : "Approve"}</span>
-            </button>
-          )}
-
-          <button
-            onClick={exportToCSV}
-            className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
-          >
-            <Download className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Export CSV</span>
-            <span className="sm:hidden">CSV</span>
-          </button>
-          <button
-            onClick={exportToJSON}
-            className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
-          >
-            <Download className="w-4 h-4 flex-shrink-0" />
-            <span className="hidden sm:inline">Export JSON</span>
-            <span className="sm:hidden">JSON</span>
-          </button>
-        </div>
-      </div>
+      {/* Toolbar with Stats and Actions */}
+      <TableToolbar
+        results={localResults}
+        schema={schema}
+        batchId={batchId}
+        isAutoCalculating={isAutoCalculating}
+        isApproving={isApproving}
+        approvalStatus={approvalStatus}
+        reviewedCount={reviewedCount}
+        totalCount={localResults.length}
+        onAutoCalculate={handleAutoCalculate}
+        onApproveAll={handleApproveAll}
+        onExportCSV={exportToCSV}
+        onExportJSON={exportToJSON}
+      />
 
       {/* Edit Instructions */}
-      <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-3 flex items-center gap-3">
-        <Edit3 className="w-5 h-5 text-indigo-400" />
-        <p className="text-sm text-indigo-200">
-          <strong>Click any cell</strong> to edit. Changes are saved automatically.
-          <span className="ml-2 inline-flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-indigo-500" />
-            indicates manually edited cells.
-          </span>
-        </p>
-      </div>
+      <ValidationSummary />
 
       {/* Table */}
       <div className="bg-slate-800/50 rounded-xl overflow-hidden border border-slate-700">
@@ -688,4 +364,3 @@ export function EditableResultsTable({
     </div>
   );
 }
-

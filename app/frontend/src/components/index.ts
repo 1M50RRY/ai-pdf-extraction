@@ -7,6 +7,6 @@ export { LiveProgress } from "./LiveProgress";
 export { EditableResultsTable } from "./EditableResultsTable";
 export type { EditableExtractionResult } from "./EditableResultsTable";
 export { HistoryModal } from "./HistoryModal";
-export { HistoryPage } from "./HistoryPage";
+export { HistoryPage } from "../pages/HistoryPage";
 export { SmartCell } from "./SmartCell";
 
