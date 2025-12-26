@@ -530,7 +530,7 @@ export function EditableResultsTable({
   return (
     <div className="space-y-6">
       {/* Stats Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <div>
             <p className="text-sm text-slate-400">Total Extractions</p>
@@ -565,54 +565,58 @@ export function EditableResultsTable({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Dynamic Calculation Engine Button */}
           <button
             onClick={handleAutoCalculate}
             disabled={isAutoCalculating}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors font-medium disabled:bg-slate-600 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors text-sm font-medium disabled:bg-slate-600 disabled:cursor-not-allowed whitespace-nowrap"
             title="Dynamic Calculation Engine: Calculates missing values, infers formulas from field names, computes totals/averages, cross-references data, and completes patterns"
           >
             {isAutoCalculating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             ) : (
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 flex-shrink-0" />
             )}
-            🧮 Smart Calculate & Complete
+            <span className="hidden sm:inline">🧮 Smart Calculate</span>
+            <span className="sm:hidden">🧮 Calculate</span>
           </button>
 
           {/* Approve All Button */}
           <button
             onClick={handleApproveAll}
             disabled={isApproving || approvalStatus === "success"}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${approvalStatus === "success"
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${approvalStatus === "success"
               ? "bg-emerald-500/20 text-emerald-400 cursor-default"
               : "bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-600"
               }`}
           >
             {isApproving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             ) : approvalStatus === "success" ? (
-              <CheckCircle className="w-4 h-4" />
+              <CheckCircle className="w-4 h-4 flex-shrink-0" />
             ) : (
-              <Check className="w-4 h-4" />
+              <Check className="w-4 h-4 flex-shrink-0" />
             )}
-            {approvalStatus === "success" ? "All Approved" : "Approve All"}
+            <span className="hidden sm:inline">{approvalStatus === "success" ? "All Approved" : "Approve All"}</span>
+            <span className="sm:hidden">{approvalStatus === "success" ? "Approved" : "Approve"}</span>
           </button>
 
           <button
             onClick={exportToCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors font-medium"
+            className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
           >
-            <Download className="w-4 h-4" />
-            Export CSV
+            <Download className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Export CSV</span>
+            <span className="sm:hidden">CSV</span>
           </button>
           <button
             onClick={exportToJSON}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors text-sm font-medium whitespace-nowrap"
           >
-            <Download className="w-4 h-4" />
-            Export JSON
+            <Download className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Export JSON</span>
+            <span className="sm:hidden">JSON</span>
           </button>
         </div>
       </div>
