@@ -304,10 +304,10 @@ export async function updateExtraction(
 }
 
 /**
- * Auto-calculate missing fields using mathematical heuristics
+ * Smart repair missing fields using LLM
  */
 export async function autoCalculateDocument(documentId: string): Promise<ExtractionDetail> {
-  const response = await api.post<ExtractionDetail>(`/documents/${documentId}/auto-calculate`);
+  const response = await api.post<ExtractionDetail>(`/documents/${documentId}/smart-repair`);
   return response.data;
 }
 
