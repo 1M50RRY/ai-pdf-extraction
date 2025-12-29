@@ -25,8 +25,8 @@ interface TableToolbarProps {
 
 export function TableToolbar({
   results,
-  schema,
-  batchId,
+  schema: _schema,
+  batchId: _batchId,
   isAutoCalculating,
   isApproving,
   approvalStatus,
